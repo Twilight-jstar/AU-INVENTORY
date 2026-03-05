@@ -6,11 +6,7 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\TransactionController;
-<<<<<<< HEAD
-use App\Http\Controllers\DashboardController; // 1. Add this import
-=======
 use App\Http\Controllers\DashboardController; 
->>>>>>> 8a52d88ef3371a8871a24cb700a76a0ed0de123b
 use App\Http\Controllers\ReportController;
 
 /*
