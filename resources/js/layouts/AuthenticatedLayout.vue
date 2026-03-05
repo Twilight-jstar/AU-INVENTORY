@@ -25,8 +25,8 @@ const navItems = [
 
 <template>
     <div class="min-h-screen bg-gray-100 flex flex-col md:flex-row">
-        <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200">
-            <div class="p-6 flex items-center gap-2 font-bold text-xl text-primary">
+        <aside class="hidden md:flex flex-col w-64 bg-purple-900 border-r border-gray-200">
+            <div class="p-6 flex items-center gap-2 font-bold text-xl text-white">
                 <Package class="w-8 h-8" />
                 <span>Inventory</span>
             </div>
@@ -36,10 +36,10 @@ const navItems = [
                     v-for="item in navItems" 
                     :key="item.name"
                     :href="item.href"
-                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-white transition-colors"
                     :class="route().current(item.active) 
-                        ? 'bg-primary/10 text-primary' 
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+                        ? 'bg-white/10 text-white' 
+                        : 'text-white hover:bg-gray-50 hover:text-gray-900'"
                 >
                     <component :is="item.icon" class="w-5 h-5" />
                     {{ item.name }}
@@ -51,7 +51,7 @@ const navItems = [
                     :href="route('logout')" 
                     method="post" 
                     as="button"
-                    class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-white hover:bg-gray-50 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors"
                 >
                     <LogOut class="w-5 h-5" />
                     Log Out
