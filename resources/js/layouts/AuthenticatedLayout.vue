@@ -45,34 +45,21 @@ const navItems = [
                     :href="item.href"
                     class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
                     :class="route().current(item.active) 
-<<<<<<< HEAD
-                        ? 'bg-white/10 text-white' 
-                        : 'text-white-600 hover:bg-white-50 hover:text-white-900'"
-=======
                         ? 'bg-white/20 text-white shadow-sm' 
                         : 'text-purple-100 hover:bg-white/10 hover:text-white'"
->>>>>>> 8a52d88ef3371a8871a24cb700a76a0ed0de123b
                 >
                     <component :is="item.icon" class="w-5 h-5" />
                     {{ item.name }}
                 </Link>
             </nav>
 
-<<<<<<< HEAD
-            <div class="p-4 border-t border-white-200">
-=======
             <div class="p-4 border-t border-purple-800">
->>>>>>> 8a52d88ef3371a8871a24cb700a76a0ed0de123b
                 <Link 
                     :href="route('logout')" 
                     method="post" 
                     as="button"
-<<<<<<< HEAD
-                    class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-white-600 hover:bg-white-50 rounded-lg transition-colors"
-=======
                     type="button"
                     class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-white hover:bg-white/10 rounded-lg transition-all duration-200 text-left"
->>>>>>> 8a52d88ef3371a8871a24cb700a76a0ed0de123b
                 >
                     <LogOut class="w-5 h-5 text-purple-300" />
                     Log Out
