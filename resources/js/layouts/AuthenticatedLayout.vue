@@ -11,10 +11,6 @@ import {
     Menu,
     X 
 } from 'lucide-vue-next';
-import { route } from 'ziggy-js';
-
-// Note: If Ziggy is configured globally in app.ts, 
-// you don't need to import { route } here.
 
 const isMobileMenuOpen = ref(false);
 
@@ -28,8 +24,15 @@ const navItems = [
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-100 flex flex-col md:flex-row">
-        <aside class="hidden md:flex flex-col w-64 bg-purple-900 border-r border-purple-800 shadow-xl">
+    <div class="min-h-screen flex flex-col md:flex-row relative">
+        <div 
+            class="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+            style="background-image: url('/images/auslbg1.jpg');"
+        >
+            <div class="absolute inset-0 bg-black/5"></div>
+        </div>
+
+        <aside class="hidden md:flex flex-col w-64 bg-purple-900 border-r sticky top-0 h-screen border-purple-800 shadow-xl z-20">
             <div class="p-6 flex items-center gap-2 font-bold text-xl text-white">
                 <Package class="w-8 h-8 text-purple-300" />
                 <span>ALF Inventory</span>
@@ -64,7 +67,7 @@ const navItems = [
             </div>
         </aside>
 
-        <header class="md:hidden bg-purple-900 border-b border-purple-800 p-4 flex items-center justify-between text-white">
+        <header class="md:hidden bg-purple-900 border-b border-purple-800 p-4 flex items-center justify-between text-white z-20">
             <div class="flex items-center gap-2 font-bold">
                 <Package class="w-6 h-6 text-purple-300" />
                 <span>ALF Inventory</span>
@@ -75,7 +78,7 @@ const navItems = [
             </button>
         </header>
 
-        <div v-if="isMobileMenuOpen" class="md:hidden bg-white border-b border-gray-200 px-4 py-2 space-y-1 shadow-lg">
+        <div v-if="isMobileMenuOpen" class="md:hidden bg-white border-b border-gray-200 px-4 py-2 space-y-1 shadow-lg z-20">
             <Link 
                 v-for="item in navItems" 
                 :key="item.name"
@@ -91,8 +94,7 @@ const navItems = [
             </Link>
         </div>
 
-        <main class="flex-1 p-4 md:p-8 overflow-y-auto bg-cover bg-center bg-no-repeat bg-fixed]"
-            style="background-image: url('/images/auslbg1.jpg');">
+        <main class="flex-1 p-4 md:p-8 relative z-10 overflow-y-auto">
             <div class="max-w-7xl mx-auto">
                 <slot />
             </div>
