@@ -26,8 +26,6 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        
-        // Removed the lines causing the 500 error:
         // Fortify::updateUserProfileInformationUsing(...)
         // Fortify::updatePasswordsUsing(...)
     }

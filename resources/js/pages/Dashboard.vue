@@ -1,6 +1,10 @@
 <script setup>
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3'; // Added usePage
+import { computed } from 'vue';
+
+const page = usePage();
+const userName = computed(() => page.props.auth.user.name);
 
 defineProps({
     stats: Object,
@@ -14,6 +18,12 @@ defineProps({
 
     <AuthenticatedLayout>
         <div class="space-y-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    Welcome back, {{ userName }}!
+                </h1>
+                <p class="text-sm text-gray-500">Here's what's happening with your inventory today.</p>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                     <h3 class="text-sm font-medium text-gray-500">Total Items</h3>
