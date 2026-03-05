@@ -19,6 +19,14 @@ class CategoryController extends Controller
     {
         $request->validate(['name' => 'required|unique:categories']);
         Category::create($request->all());
+        
+        return redirect()->route('categories.index');
+    }
+
+    public function destroy(Category $category)
+    {
+        $category->delete();
+        
         return redirect()->route('categories.index');
     }
 }

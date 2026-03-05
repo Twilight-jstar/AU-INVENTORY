@@ -19,6 +19,14 @@ class UnitController extends Controller
     {
         $request->validate(['name' => 'required|max:50']);
         Unit::create($request->all());
+        
+        return redirect()->route('units.index');
+    }
+
+    public function destroy(Unit $unit)
+    {
+        $unit->delete();
+        
         return redirect()->route('units.index');
     }
 }

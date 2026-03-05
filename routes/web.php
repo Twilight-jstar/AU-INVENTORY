@@ -20,8 +20,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    
-    // 2. Change this line from Route::inertia to Route::get
+
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Reports Route
@@ -32,6 +31,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('categories', CategoryController::class);
     Route::resource('units', UnitController::class);
     Route::resource('transactions', TransactionController::class);
+
+    //Delete routes for categories and units
+    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+    Route::delete('/units/{unit}', [UnitController::class, 'destroy'])->name('units.destroy');
 });
 
 require __DIR__.'/settings.php';

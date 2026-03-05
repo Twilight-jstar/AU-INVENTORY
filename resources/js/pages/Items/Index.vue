@@ -1,6 +1,8 @@
 <script setup>
 import { Link, Head } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue';
+import Card from '@/components/ui/card/Card.vue';
+import { Plus, Package, AlertTriangle, FileText } from 'lucide-vue-next';
 
 defineProps({
     items: Array
@@ -8,57 +10,88 @@ defineProps({
 </script>
 
 <template>
-    <Head title="Inventory Items" />
+    <Head title="Inventory Registry" />
 
     <AuthenticatedLayout>
-        <div class="py-6">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-800">Inventory Items</h1>
-                <Link 
-                    :href="route('items.create')" 
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition-colors font-medium flex items-center gap-2"
-                >
-                    <span class="text-xl">+</span> Add New Item
-                </Link>
+        <div class="space-y-8 max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Inventory Registry</h1>
+                    <p class="text-sm text-slate-500 mt-1 italic">Centralized database of school assets and supply levels.</p>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <Link 
+                        :href="route('items.create')" 
+                        class="inline-flex items-center px-4 py-2 bg-slate-900 hover:bg-purple-900 text-white text-xs font-bold rounded-sm shadow-sm transition-all uppercase tracking-widest"
+                    >
+                        <Plus class="w-3.5 h-3.5 mr-2" />
+                        Enroll New Item
+                    </Link>
+                </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+            <Card class="p-0 border-none ring-1 ring-slate-200 shadow-none overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="min-w-full leading-normal">
+                    <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-gray-50 text-gray-600 uppercase text-xs font-semibold tracking-wider border-b">
-                                <th class="py-4 px-6 text-left">Code</th>
-                                <th class="py-4 px-6 text-left">Name</th>
-                                <th class="py-4 px-6 text-left">Category</th>
-                                <th class="py-4 px-6 text-left">Stock</th>
-                                <th class="py-4 px-6 text-left">Unit</th>
+                            <tr class="bg-slate-50 text-slate-600 text-[11px] font-bold uppercase tracking-[0.1em] border-b border-slate-200">
+                                <th class="py-4 px-6">Catalog Code</th>
+                                <th class="py-4 px-6">Item Description</th>
+                                <th class="py-4 px-6">Classification</th>
+                                <th class="py-4 px-6 text-center">Current Stock</th>
+                                <th class="py-4 px-6">Unit</th>
                             </tr>
                         </thead>
-                        <tbody class="text-gray-700 text-sm">
-                            <tr v-for="item in items" :key="item.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                <td class="py-4 px-6 font-mono text-xs">{{ item.product_code }}</td>
-                                <td class="py-4 px-6 font-medium text-gray-900">{{ item.name }}</td>
+                        <tbody class="text-slate-700 text-sm divide-y divide-slate-100">
+                            <tr v-for="item in items" :key="item.id" class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-4 px-6 font-mono text-[11px] text-slate-500 uppercase tracking-tighter">
+                                    {{ item.product_code }}
+                                </td>
+                                <td class="py-4 px-6 font-bold text-slate-900">
+                                    {{ item.name }}
+                                </td>
                                 <td class="py-4 px-6">
-                                    <span v-if="item.category" class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                                    <span v-if="item.category" class="text-[11px] font-bold text-purple-800 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-sm uppercase tracking-wide">
                                         {{ item.category.name }}
                                     </span>
-                                    <span v-else class="text-gray-400">N/A</span>
+                                    <span v-else class="text-slate-400 italic">Unassigned</span>
                                 </td>
                                 <td class="py-4 px-6">
-                                    <span :class="item.quantity <= 5 ? 'text-red-600 font-bold' : ''">
-                                        {{ item.quantity }}
-                                    </span>
+                                    <div class="flex items-center justify-center gap-2">
+                                        <span 
+                                            :class="item.quantity <= 5 ? 'text-red-700 bg-red-50 border-red-100' : 'text-slate-700 bg-slate-50 border-slate-200'"
+                                            class="font-mono font-bold px-2 py-0.5 border rounded-sm"
+                                        >
+                                            {{ item.quantity }}
+                                        </span>
+                                        <AlertTriangle v-if="item.quantity <= 5" class="w-3.5 h-3.5 text-red-600" />
+                                    </div>
                                 </td>
-                                <td class="py-4 px-6 text-gray-500">{{ item.unit?.name || 'N/A' }}</td>
+                                <td class="py-4 px-6 text-slate-500 font-medium italic text-xs">
+                                    {{ item.unit?.name || 'unit' }}
+                                </td>
                             </tr>
+
                             <tr v-if="items.length === 0">
-                                <td colspan="5" class="py-12 text-center text-gray-500">
-                                    No items found. Click "+ Add New Item" to start your inventory.
+                                <td colspan="5" class="py-20 text-center text-slate-400">
+                                    <div class="flex flex-col items-center gap-3">
+                                        <FileText class="w-10 h-10 text-slate-200" />
+                                        <div class="space-y-1">
+                                            <p class="font-bold text-slate-500 uppercase text-xs tracking-widest">No Records Found</p>
+                                            <p class="text-xs italic">The current inventory registry is empty.</p>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+            </Card>
+
+            <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase font-bold tracking-widest">
+                <div class="w-1 h-1 bg-slate-300 rounded-full"></div>
+                Internal Audit View Only
             </div>
         </div>
     </AuthenticatedLayout>
