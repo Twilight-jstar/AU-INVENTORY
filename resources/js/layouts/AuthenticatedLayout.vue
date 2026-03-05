@@ -29,10 +29,10 @@ const navItems = [
 
 <template>
     <div class="min-h-screen bg-gray-100 flex flex-col md:flex-row">
-        <aside class="hidden md:flex flex-col w-64 bg-purple-900 border-r border-purple-800 shadow-xl">
+        <aside class="hidden md:flex flex-col w-64 bg-purple-900 border-r border-purple-800 text-white sticky top-0 h-screen">
             <div class="p-6 flex items-center gap-2 font-bold text-xl text-white">
-                <Package class="w-8 h-8 text-purple-300" />
-                <span>ALF Inventory</span>
+                <Package class="w-8 h-8" />
+                <span>Inventory</span>
             </div>
 
             <nav class="flex-1 px-4 space-y-1">
@@ -42,21 +42,20 @@ const navItems = [
                     :href="item.href"
                     class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
                     :class="route().current(item.active) 
-                        ? 'bg-white/20 text-white shadow-sm' 
-                        : 'text-purple-100 hover:bg-white/10 hover:text-white'"
+                        ? 'bg-white/10 text-white' 
+                        : 'text-white-600 hover:bg-white-50 hover:text-white-900'"
                 >
                     <component :is="item.icon" class="w-5 h-5" />
                     {{ item.name }}
                 </Link>
             </nav>
 
-            <div class="p-4 border-t border-purple-800">
+            <div class="p-4 border-t border-white-200">
                 <Link 
                     :href="route('logout')" 
                     method="post" 
                     as="button"
-                    type="button"
-                    class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-white hover:bg-white/10 rounded-lg transition-all duration-200 text-left"
+                    class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-white-600 hover:bg-white-50 rounded-lg transition-colors"
                 >
                     <LogOut class="w-5 h-5 text-purple-300" />
                     Log Out
@@ -91,7 +90,8 @@ const navItems = [
             </Link>
         </div>
 
-        <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto bg-cover bg-center bg-no-repeat bg-fixed]"
+            style="background-image: url('/images/auslbg1.jpg');">
             <div class="max-w-7xl mx-auto">
                 <slot />
             </div>
