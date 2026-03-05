@@ -91,7 +91,8 @@ const navItems = [
             </Link>
         </div>
 
-        <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto bg-cover bg-center bg-no-repeat bg-fixed]"
+            style="background-image: url('/images/auslbg1.jpg');">
             <div class="max-w-7xl mx-auto">
                 <slot />
             </div>

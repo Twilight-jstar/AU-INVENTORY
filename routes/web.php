@@ -7,6 +7,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\DashboardController; 
+use App\Http\Controllers\ReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +23,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // 2. Change this line from Route::inertia to Route::get
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Reports Route
+    Route::get('/dashboard/download-report', [ReportController::class, 'download'])->name('reports.download');
 
     // Inventory Management Resource Routes
     Route::resource('items', ItemController::class);
