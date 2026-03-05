@@ -24,13 +24,6 @@ const navItems = [
 </script>
 
 <template>
-<<<<<<< HEAD
-    <div class="min-h-screen bg-gray-100 flex flex-col md:flex-row">
-        <aside class="hidden md:flex flex-col w-64 bg-purple-900 border-r border-purple-800 text-white sticky top-0 h-screen">
-            <div class="p-6 flex items-center gap-2 font-bold text-xl text-white">
-                <Package class="w-8 h-8" />
-                <span>Inventory</span>
-=======
     <div class="min-h-screen flex flex-col md:flex-row relative">
         <div 
             class="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
@@ -43,7 +36,6 @@ const navItems = [
             <div class="p-6 flex items-center gap-2 font-bold text-xl text-white">
                 <Package class="w-8 h-8 text-purple-300" />
                 <span>ALF Inventory</span>
->>>>>>> 8a52d88ef3371a8871a24cb700a76a0ed0de123b
             </div>
 
             <nav class="flex-1 px-4 space-y-1">
