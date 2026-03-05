@@ -19,9 +19,11 @@ class DashboardController extends Controller
                 'total_categories' => Category::count(),
                 'recent_updates'   => ItemTransaction::whereDate('created_at', today())->count(),
             ],
+            'top_stock_items' => Item::orderBy('quantity', 'desc')
+                ->limit(5)
+                ->get(),
             'low_stock_items' => Item::where('quantity', '<=', 5)
                 ->with(['unit', 'category'])
-                ->limit(5)
                 ->get(),
             'recent_transactions' => ItemTransaction::with('item')
                 ->latest()
