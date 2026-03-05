@@ -11,10 +11,6 @@ import {
     Menu,
     X 
 } from 'lucide-vue-next';
-import { route } from 'ziggy-js';
-
-// Note: If Ziggy is configured globally in app.ts, 
-// you don't need to import { route } here.
 
 const isMobileMenuOpen = ref(false);
 
@@ -28,11 +24,26 @@ const navItems = [
 </script>
 
 <template>
+<<<<<<< HEAD
     <div class="min-h-screen bg-gray-100 flex flex-col md:flex-row">
         <aside class="hidden md:flex flex-col w-64 bg-purple-900 border-r border-purple-800 text-white sticky top-0 h-screen">
             <div class="p-6 flex items-center gap-2 font-bold text-xl text-white">
                 <Package class="w-8 h-8" />
                 <span>Inventory</span>
+=======
+    <div class="min-h-screen flex flex-col md:flex-row relative">
+        <div 
+            class="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+            style="background-image: url('/images/auslbg1.jpg');"
+        >
+            <div class="absolute inset-0 bg-black/5"></div>
+        </div>
+
+        <aside class="hidden md:flex flex-col w-64 bg-purple-900 border-r sticky top-0 h-screen border-purple-800 shadow-xl z-20">
+            <div class="p-6 flex items-center gap-2 font-bold text-xl text-white">
+                <Package class="w-8 h-8 text-purple-300" />
+                <span>ALF Inventory</span>
+>>>>>>> 8a52d88ef3371a8871a24cb700a76a0ed0de123b
             </div>
 
             <nav class="flex-1 px-4 space-y-1">
@@ -42,20 +53,34 @@ const navItems = [
                     :href="item.href"
                     class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
                     :class="route().current(item.active) 
+<<<<<<< HEAD
                         ? 'bg-white/10 text-white' 
                         : 'text-white-600 hover:bg-white-50 hover:text-white-900'"
+=======
+                        ? 'bg-white/20 text-white shadow-sm' 
+                        : 'text-purple-100 hover:bg-white/10 hover:text-white'"
+>>>>>>> 8a52d88ef3371a8871a24cb700a76a0ed0de123b
                 >
                     <component :is="item.icon" class="w-5 h-5" />
                     {{ item.name }}
                 </Link>
             </nav>
 
+<<<<<<< HEAD
             <div class="p-4 border-t border-white-200">
+=======
+            <div class="p-4 border-t border-purple-800">
+>>>>>>> 8a52d88ef3371a8871a24cb700a76a0ed0de123b
                 <Link 
                     :href="route('logout')" 
                     method="post" 
                     as="button"
+<<<<<<< HEAD
                     class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-white-600 hover:bg-white-50 rounded-lg transition-colors"
+=======
+                    type="button"
+                    class="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-white hover:bg-white/10 rounded-lg transition-all duration-200 text-left"
+>>>>>>> 8a52d88ef3371a8871a24cb700a76a0ed0de123b
                 >
                     <LogOut class="w-5 h-5 text-purple-300" />
                     Log Out
@@ -63,7 +88,7 @@ const navItems = [
             </div>
         </aside>
 
-        <header class="md:hidden bg-purple-900 border-b border-purple-800 p-4 flex items-center justify-between text-white">
+        <header class="md:hidden bg-purple-900 border-b border-purple-800 p-4 flex items-center justify-between text-white z-20">
             <div class="flex items-center gap-2 font-bold">
                 <Package class="w-6 h-6 text-purple-300" />
                 <span>ALF Inventory</span>
@@ -74,7 +99,7 @@ const navItems = [
             </button>
         </header>
 
-        <div v-if="isMobileMenuOpen" class="md:hidden bg-white border-b border-gray-200 px-4 py-2 space-y-1 shadow-lg">
+        <div v-if="isMobileMenuOpen" class="md:hidden bg-white border-b border-gray-200 px-4 py-2 space-y-1 shadow-lg z-20">
             <Link 
                 v-for="item in navItems" 
                 :key="item.name"
@@ -90,8 +115,7 @@ const navItems = [
             </Link>
         </div>
 
-        <main class="flex-1 p-4 md:p-8 overflow-y-auto bg-cover bg-center bg-no-repeat bg-fixed]"
-            style="background-image: url('/images/auslbg1.jpg');">
+        <main class="flex-1 p-4 md:p-8 relative z-10 overflow-y-auto">
             <div class="max-w-7xl mx-auto">
                 <slot />
             </div>
