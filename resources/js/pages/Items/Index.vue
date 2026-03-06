@@ -138,3 +138,4 @@ const isLowStock = (item) => {
         </div>
     </AuthenticatedLayout>
 </template>
+item.id
