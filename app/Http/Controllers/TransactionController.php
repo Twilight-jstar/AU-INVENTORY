@@ -113,6 +113,8 @@ class TransactionController extends Controller
                 StockOut::create($validated);
                 $item->decrement('quantity', $request->quantity);
             }
+
+            return redirect()->route('transactions.index')->with('success', 'Stock movement recorded.');
         });
     }
 
