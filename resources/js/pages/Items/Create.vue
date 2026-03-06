@@ -13,6 +13,7 @@ const form = useForm({
     product_code: '',
     name: '',
     quantity: 0,
+    min_stock: 0,
     category_id: '',
     unit_id: '',
     description: ''
@@ -110,13 +111,29 @@ const submit = () => {
                                 </div>
                             </div>
 
-                            <div class="w-1/2">
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Initial Quantity</label>
-                                <input 
-                                    v-model="form.quantity" 
-                                    type="number" 
-                                    class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm focus:ring-1 focus:ring-purple-600 outline-none" 
-                                />
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Initial Quantity</label>
+                                    <input 
+                                        v-model="form.quantity" 
+                                        type="number" 
+                                        class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm focus:ring-1 focus:ring-purple-600 outline-none" 
+                                        min="0"
+                                    />
+                                    <div v-if="form.errors.quantity" class="text-red-600 text-[11px] mt-1 font-semibold">{{ form.errors.quantity }}</div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Min. Stock Level</label>
+                                    <input 
+                                        v-model="form.min_stock" 
+                                        type="number" 
+                                        placeholder="Alert at..."
+                                        class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm focus:ring-1 focus:ring-purple-600 outline-none" 
+                                        min="0"
+                                    />
+                                    <div v-if="form.errors.min_stock" class="text-red-600 text-[11px] mt-1 font-semibold">{{ form.errors.min_stock }}</div>
+                                </div>
                             </div>
 
                             <div>

@@ -15,6 +15,7 @@ class Item extends Model
         'product_code',
         'name',
         'quantity',
+        'min_stock', // Added this to match your migration
         'unit_id',
         'category_id',
         'description'
@@ -32,9 +33,22 @@ class Item extends Model
         return $this->belongsTo(Unit::class);
     }
 
-    // An item has many transactions (history)
-    public function transactions(): HasMany
+    // Relationships for the Stock In and Stock Out tables you created
+    public function stockIns(): HasMany
     {
-        return $this->hasMany(ItemTransaction::class, 'items_id');
+        return $this->hasMany(StockIn::class);
+    }
+
+    public function stockOuts(): HasMany
+    {
+        return $this->hasMany(StockOut::class);
+    }
+
+    /**
+     * Optional: Helper to check if stock is low
+     */
+    public function isLowStock(): bool
+    {
+        return $this->quantity <= $this->min_stock;
     }
 }

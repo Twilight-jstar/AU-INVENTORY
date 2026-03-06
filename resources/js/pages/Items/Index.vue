@@ -41,6 +41,7 @@ defineProps({
                                 <th class="py-4 px-6">Classification</th>
                                 <th class="py-4 px-6 text-center">Current Stock</th>
                                 <th class="py-4 px-6">Unit</th>
+                                <th class="py-4 px-6 text-center">Description</th>
                             </tr>
                         </thead>
                         <tbody class="text-slate-700 text-sm divide-y divide-slate-100">
@@ -60,21 +61,24 @@ defineProps({
                                 <td class="py-4 px-6">
                                     <div class="flex items-center justify-center gap-2">
                                         <span 
-                                            :class="item.quantity <= 5 ? 'text-red-700 bg-red-50 border-red-100' : 'text-slate-700 bg-slate-50 border-slate-200'"
+                                            :class="item.quantity <= item.min_stock ? 'text-red-700 bg-red-50 border-red-100' : 'text-slate-700 bg-slate-50 border-slate-200'"
                                             class="font-mono font-bold px-2 py-0.5 border rounded-sm"
                                         >
                                             {{ item.quantity }}
                                         </span>
-                                        <AlertTriangle v-if="item.quantity <= 5" class="w-3.5 h-3.5 text-red-600" />
+                                        <AlertTriangle v-if="item.quantity <= item.min_stock" class="w-3.5 h-3.5 text-red-600" />
                                     </div>
                                 </td>
                                 <td class="py-4 px-6 text-slate-500 font-medium italic text-xs">
                                     {{ item.unit?.name || 'unit' }}
                                 </td>
+                                <td class="py-4 px-6 text-slate-500 font-medium italic text-xs">
+                                    {{ item.description }}
+                                </td>
                             </tr>
 
                             <tr v-if="items.length === 0">
-                                <td colspan="5" class="py-20 text-center text-slate-400">
+                                <td colspan="6" class="py-20 text-center text-slate-400">
                                     <div class="flex flex-col items-center gap-3">
                                         <FileText class="w-10 h-10 text-slate-200" />
                                         <div class="space-y-1">

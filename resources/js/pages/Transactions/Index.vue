@@ -4,7 +4,9 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue';
 import Card from '@/components/ui/card/Card.vue';
 import { History, Plus, ArrowUpRight, ArrowDownLeft, Clock } from 'lucide-vue-next';
 
-defineProps({ transactions: Array });
+defineProps({ 
+    transactions: Array 
+});
 
 const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -28,13 +30,15 @@ const formatDate = (dateString) => {
                     <p class="text-sm text-slate-500 italic mt-1">History of all stock movements and adjustments.</p>
                 </div>
                 
-                <Link 
-                    :href="route('transactions.create')" 
-                    class="bg-slate-900 hover:bg-purple-900 text-white px-4 py-2 text-xs font-bold rounded-sm shadow-sm transition-all uppercase tracking-widest flex items-center gap-2"
-                >
-                    <Plus class="w-3.5 h-3.5" />
-                    Record Movement
-                </Link>
+                <div class="flex items-center gap-3">
+                    <Link 
+                        :href="route('transactions.create')" 
+                        class="bg-slate-900 hover:bg-purple-900 text-white px-4 py-2 text-xs font-bold rounded-sm shadow-sm transition-all uppercase tracking-widest flex items-center gap-2"
+                    >
+                        <Plus class="w-3.5 h-3.5" />
+                        Record Movement
+                    </Link>
+                </div>
             </div>
 
             <Card class="p-0 border-none ring-1 ring-slate-200 shadow-none overflow-hidden">
@@ -49,7 +53,7 @@ const formatDate = (dateString) => {
                                 <th class="py-4 px-6">Item Description</th>
                                 <th class="py-4 px-6">Type</th>
                                 <th class="py-4 px-6 text-center">Amount</th>
-                                <th class="py-4 px-6">Notes</th>
+                                <th class="py-4 px-6">Source/Destination Details</th>
                             </tr>
                         </thead>
                         <tbody class="text-slate-700 text-sm divide-y divide-slate-100">
@@ -57,19 +61,28 @@ const formatDate = (dateString) => {
                                 <td class="py-4 px-6 text-slate-500 text-xs font-medium">
                                     {{ formatDate(trx.created_at) }}
                                 </td>
+
                                 <td class="py-4 px-6">
-                                    <div class="font-bold text-slate-900 uppercase tracking-tight">{{ trx.item?.name || 'Deleted Item' }}</div>
-                                    <div class="text-[10px] text-slate-400 font-mono tracking-tighter">{{ trx.item?.product_code }}</div>
+                                    <div class="font-bold text-slate-900 uppercase tracking-tight">
+                                        {{ trx.item?.name || 'Unknown Item' }}
+                                    </div>
+                                    <div class="text-[10px] text-slate-400 font-mono tracking-tighter">
+                                        {{ trx.item?.product_code || 'N/A' }}
+                                    </div>
                                 </td>
+
                                 <td class="py-4 px-6">
                                     <div 
-                                        class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
-                                        :class="trx.type === 'In' ? 'text-emerald-600' : 'text-slate-500'"
+                                        class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                                        :class="trx.type === 'In' 
+                                            ? 'text-emerald-700 bg-emerald-50 border border-emerald-100' 
+                                            : 'text-slate-600 bg-slate-50 border border-slate-200'"
                                     >
                                         <component :is="trx.type === 'In' ? ArrowUpRight : ArrowDownLeft" class="w-3 h-3" />
                                         {{ trx.type === 'In' ? 'Stock In' : 'Stock Out' }}
                                     </div>
                                 </td>
+
                                 <td class="py-4 px-6 text-center font-mono">
                                     <span 
                                         class="px-2 py-0.5 rounded-sm border font-bold"
@@ -80,8 +93,9 @@ const formatDate = (dateString) => {
                                         {{ trx.type === 'In' ? '+' : '-' }}{{ trx.quantity }}
                                     </span>
                                 </td>
-                                <td class="py-4 px-6 text-slate-400 italic text-xs">
-                                    {{ trx.note || 'No additional details' }}
+
+                                <td class="py-4 px-6 text-slate-500 italic text-xs leading-relaxed">
+                                    {{ trx.note || 'Standard Adjustment' }}
                                 </td>
                             </tr>
                             

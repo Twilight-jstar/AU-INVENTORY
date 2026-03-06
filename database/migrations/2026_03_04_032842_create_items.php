@@ -24,6 +24,9 @@ return new class extends Migration
             // quantity DECIMAL(10, 2) DEFAULT 0
             $table->decimal('quantity', 10, 2)->default(0);
 
+            // min_stock DECIMAL(10, 2) DEFAULT 0
+            $table->decimal('min_stock', 10, 2)->default(0);
+
             // unit_id INT + FOREIGN KEY (unit_id) REFERENCES Units(id)
             $table->foreignId('unit_id')->nullable()->constrained('units')->onDelete('set null');
 
