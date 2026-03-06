@@ -11,14 +11,43 @@ class CategoryController extends Controller
     public function index()
     {
         return Inertia::render('Categories/Index', [
-            'categories' => Category::all()
+            // withCount lets the frontend show how many items are in each category
+            'categories' => Category::withCount('items')->get()
         ]);
     }
 
     public function store(Request $request)
     {
-        $request->validate(['name' => 'required|unique:categories']);
-        Category::create($request->all());
-        return redirect()->route('categories.index');
+        $validated = $request->validate([
+            'name' => 'required|max:100|unique:categories,name'
+        ]);
+
+        Category::create($validated);
+        
+        return redirect()->route('categories.index')->with('message', 'Category created successfully.');
+    }
+
+    public function update(Request $request, Category $category)
+    {
+        $validated = $request->validate([
+            // Ignore current category ID during unique check so you can save without changing the name
+            'name' => 'required|max:100|unique:categories,name,' . $category->id
+        ]);
+
+        $category->update($validated);
+        
+        return redirect()->route('categories.index')->with('message', 'Category updated.');
+    }
+
+    public function destroy(Category $category)
+    {
+        // Safety Check: Check if items exist in this category before deleting
+        if ($category->items()->count() > 0) {
+            return redirect()->back()->with('error', 'Cannot delete category. There are still items assigned to it.');
+        }
+
+        $category->delete();
+        
+        return redirect()->route('categories.index')->with('message', 'Category deleted.');
     }
 }

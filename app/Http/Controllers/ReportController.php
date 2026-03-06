@@ -4,15 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Item;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
-    public function download()
+    public function download(): StreamedResponse
     {
-        // Pangalan ng file kapag na-download
-        $fileName = 'School_Inventory_Report_' . date('Y-m-d') . '.csv';
+        // Filename with timestamp
+        $fileName = 'School_Inventory_Report_' . date('Y-m-d_His') . '.csv';
         
-        // Kunin ang lahat ng items kasama ang category at unit relationships
+        // Eager load relationships to prevent N+1 performance issues
         $items = Item::with(['category', 'unit'])->get();
 
         $headers = [
@@ -26,34 +27,36 @@ class ReportController extends Controller
         $callback = function() use($items) {
             $file = fopen('php://output', 'w');
             
-            // --- HEADER NG REPORT ---
+            // --- REPORT HEADER ---
             fputcsv($file, ['SCHOOL INVENTORY REPORT']);
             fputcsv($file, ['Date Generated:', date('M d, Y h:i A')]);
-            fputcsv($file, []); // Blank line para malinis tignan
+            fputcsv($file, []); 
             
-            // --- MGA PANGALAN NG COLUMN SA EXCEL ---
-            fputcsv($file, ['Item Name', 'Category', 'Current Stock', 'Unit', 'Status']);
+            // --- COLUMN HEADERS ---
+            fputcsv($file, ['Product Code', 'Item Name', 'Category', 'Current Stock', 'Min Stock', 'Unit', 'Status']);
 
-            // --- ILAGAY ANG MGA GAMIT MULA SA DATABASE ---
+            // --- DATA ROWS ---
             foreach ($items as $item) {
-                // Kung 5 o pababa, 'Critical' ang lalabas. Kung mataas, 'Healthy'
-                $status = $item->quantity <= 5 ? 'Critical' : 'Healthy';
+                // Use the dynamic min_stock from your migration
+                $status = ($item->quantity <= $item->min_stock) ? 'CRITICAL (Low Stock)' : 'HEALTHY';
                 
                 fputcsv($file, [
+                    $item->product_code,
                     $item->name,
-                    $item->category->name ?? 'N/A', // N/A kung walang category
+                    $item->category->name ?? 'N/A',
                     $item->quantity,
-                    $item->unit->name ?? 'N/A',     // N/A kung walang unit
+                    $item->min_stock,
+                    $item->unit->name ?? 'N/A',
                     $status
                 ]);
             }
 
-            // --- FOOTER PARA SA MGA PIPIRMA ---
-            fputcsv($file, []); // Blank line
-            fputcsv($file, []); // Blank line
+            // --- SIGNATORY FOOTER ---
+            fputcsv($file, []); 
+            fputcsv($file, []); 
             fputcsv($file, ['Prepared By:', '____________________']);
-            fputcsv($file, ['Designation:', '____________________']);
-            fputcsv($file, ['Noted By:', '____________________']);
+            fputcsv($file, ['Date Signed:', '____________________']);
+            fputcsv($file, ['Noted By:', '____________________', '(School Head / Property Custodian)']);
 
             fclose($file);
         };
