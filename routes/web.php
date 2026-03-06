@@ -32,6 +32,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::resource('categories', CategoryController::class);
         Route::resource('units', UnitController::class);
+        
+        // Dito inilagay ang Export PDF route
+        Route::get('transactions/{id}/export-pdf', [TransactionController::class, 'exportPdf'])->name('transactions.export-pdf');
+        
         Route::resource('transactions', TransactionController::class)->except(['index', 'show', 'destroy']);
     });
 
