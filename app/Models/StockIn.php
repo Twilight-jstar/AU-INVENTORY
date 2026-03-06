@@ -30,4 +30,8 @@ class StockIn extends Model
     {
         return $this->belongsTo(Item::class);
     }
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
+    }
 }

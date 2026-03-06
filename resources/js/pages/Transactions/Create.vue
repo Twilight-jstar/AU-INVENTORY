@@ -20,7 +20,8 @@ const form = useForm({
     received_by: '', // Initialized as empty for manual entry
     date_received: new Date().toISOString().substr(0, 10),
     unit_cost: 0,
-    // Stock Out: System Captured
+    supplier_id: '',
+    // Stock Out specific fields
     released_to: '',
     released_by: authUserName.value, 
     department: '',
@@ -103,9 +104,19 @@ const submit = () => form.post(route('transactions.store'));
                                 <AlertCircle class="w-3 h-3" /> Warning: Remaining stock will be below the minimum level.
                             </p>
                         </div>
-                        <div v-if="form.type === 'In'">
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Unit Cost</label>
-                            <input v-model="form.unit_cost" type="number" step="0.01" class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm" />
+                        
+                        <div v-if="form.type === 'In'" class="grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-1">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Unit Cost</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-slate-400 text-sm">₱</span>
+                                    <input v-model="form.unit_cost" type="number" step="0.01" class="w-full border-slate-300 rounded-sm pl-7 pr-3 py-2 text-sm focus:ring-purple-600 outline-none" placeholder="0.00" />
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Supplier ID / Name</label>
+                                <input v-model="form.supplier_id" type="text" class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm focus:ring-purple-600 outline-none" placeholder="Enter Supplier" />
+                            </div>
                         </div>
                     </div>
 
