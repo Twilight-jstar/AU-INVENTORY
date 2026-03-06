@@ -137,7 +137,7 @@ class TransactionController extends Controller
             
             $transaction->type = 'Out'; // Manual nating nilalagyan ng type
             $pdf = Pdf::loadView('pdf.transaction', compact('transaction'));
-            return $pdf->download('Stock-Out-Voucher-' . $realId . '.pdf');
+            return $pdf->download('Stock-Out-Report-' . $realId . '.pdf');
         }
 
         abort(404, 'Transaction not found.');

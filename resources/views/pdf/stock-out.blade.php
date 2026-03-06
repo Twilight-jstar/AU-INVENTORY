@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Stock Out Voucher</title>
+    <title>Stock Out Report</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 14px; }
         .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #553c9a; padding-bottom: 10px; }
@@ -17,7 +17,7 @@
 
     <div class="header">
         <div class="title">ALF Inventory Disbursement System</div>
-        <div><strong>STOCK OUT VOUCHER</strong></div>
+        <div><strong>STOCK OUT REPORT</strong></div>
     </div>
 
     <div>

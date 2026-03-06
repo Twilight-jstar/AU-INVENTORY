@@ -29,7 +29,7 @@
     </table>
 
     <div class="report-title">
-        {{ $transaction->type === 'In' ? 'STOCK-IN REPORT' : 'STOCK-OUT VOUCHER' }}
+        {{ $transaction->type === 'In' ? 'STOCK-IN REPORT' : 'STOCK-OUT REPORT' }}
     </div>
 
     <table class="table">

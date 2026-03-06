@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Stock In Receiving Report</title>
+    <title>Stock In Report</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 14px; }
         .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #28a745; padding-bottom: 10px; }
@@ -17,7 +17,7 @@
 
     <div class="header">
         <div class="title">ALF Inventory System</div>
-        <div><strong>STOCK IN RECEIVING REPORT</strong></div>
+        <div><strong>STOCK IN REPORT</strong></div>
     </div>
 
     <div>
