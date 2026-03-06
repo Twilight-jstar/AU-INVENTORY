@@ -2,7 +2,7 @@
 import { Link, Head } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue';
 import Card from '@/components/ui/card/Card.vue';
-import { History, Plus, ArrowUpRight, ArrowDownLeft, Clock } from 'lucide-vue-next';
+import { History, Plus, ArrowUpRight, ArrowDownLeft, Clock, Download } from 'lucide-vue-next';
 
 defineProps({ 
     transactions: Array 
@@ -53,7 +53,8 @@ const formatDate = (dateString) => {
                                 <th class="py-4 px-6">Item Description</th>
                                 <th class="py-4 px-6">Type</th>
                                 <th class="py-4 px-6 text-center">Amount</th>
-                                <th class="py-4 px-6">Source/Destination Details</th>
+                                <th class="py-4 px-6">Transaction Details</th>
+                                <th class="py-4 px-6 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody class="text-slate-700 text-sm divide-y divide-slate-100">
@@ -95,12 +96,26 @@ const formatDate = (dateString) => {
                                 </td>
 
                                 <td class="py-4 px-6 text-slate-500 italic text-xs leading-relaxed">
+                                    <span class="font-bold text-slate-700">Supplier: {{ trx.supplier_id || 'No ID' }}</span>
+                                    <br>
                                     {{ trx.note || 'Standard Adjustment' }}
                                 </td>
+
+                                <td class="py-4 px-6 text-center">
+                                    <a 
+                                        :href="route('transactions.export-pdf', trx.id)" 
+                                        target="_blank"
+                                        class="inline-flex items-center gap-1.5 bg-purple-700 hover:bg-purple-900 text-white px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm"
+                                    >
+                                        <Download class="w-3 h-3" />
+                                        PDF
+                                    </a>    
+                                </td>
+
                             </tr>
                             
                             <tr v-if="transactions.length === 0">
-                                <td colspan="5" class="py-20 text-center text-slate-400">
+                                <td colspan="6" class="py-20 text-center text-slate-400">
                                     <div class="flex flex-col items-center gap-3">
                                         <History class="w-10 h-10 text-slate-100" />
                                         <div class="space-y-1">

@@ -8,20 +8,23 @@ use App\Models\StockOut;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TransactionController extends Controller
 {
     public function index()
     {
         // 1. Get and Transform Stock In records
-        $stockIn = StockIn::with('item')->get()->map(function ($record) {
+        $stockIn = StockIn::with(['item', 'supplier'])->get()->map(function ($record) {
             return [
                 'id' => 'in-' . $record->id,
                 'created_at' => $record->created_at,
                 'item' => $record->item,
                 'type' => 'In',
                 'quantity' => $record->quantity,
-                'note' => "Ref: " . ($record->reference_no ?? 'N/A') . " | Recby: " . ($record->received_by ?? 'Admin'),
+                'unit_cost' => $record->unit_cost,
+                'supplier_id' => $record->supplier_id, 
+                'note' => "Supplier: " . ($record->supplier->name ?? $record->supplier_id ?? 'N/A') . " | Ref: " . ($record->reference_no ?? 'N/A') . " | Cost: ₱" . number_format($record->unit_cost ?? 0, 2),
             ];
         });
 
@@ -104,5 +107,30 @@ class TransactionController extends Controller
         });
 
         return redirect()->route('transactions.index')->with('success', 'Stock movement recorded.');
+    }
+
+    public function exportPdf($id)
+    {
+        // 1. Check kung Stock In (may 'in-' sa unahan)
+        if (str_starts_with($id, 'in-')) {
+            $realId = str_replace('in-', '', $id);
+            $transaction = StockIn::with('item')->findOrFail($realId);
+            
+            $transaction->type = 'In'; // Manual nating nilalagyan ng type
+            $pdf = Pdf::loadView('pdf.transaction', compact('transaction'));
+            return $pdf->download('Stock-In-Report-' . $realId . '.pdf');
+        }
+
+        // 2. Check kung Stock Out (may 'out-' sa unahan)
+        if (str_starts_with($id, 'out-')) {
+            $realId = str_replace('out-', '', $id);
+            $transaction = StockOut::with('item')->findOrFail($realId);
+            
+            $transaction->type = 'Out'; // Manual nating nilalagyan ng type
+            $pdf = Pdf::loadView('pdf.transaction', compact('transaction'));
+            return $pdf->download('Stock-Out-Voucher-' . $realId . '.pdf');
+        }
+
+        abort(404, 'Transaction not found.');
     }
 }
