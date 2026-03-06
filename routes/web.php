@@ -21,6 +21,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // 2. INVENTORY MANAGEMENT (Admin, Clerk, Custodian)
     Route::middleware('can:manage-inventory')->group(function () {
+
+        Route::get('items/generate-code', [ItemController::class, 'generateProductCode'])->name('items.generate-code');
+        
         // Explicitly define 'create' and 'edit' BEFORE the wildcard to prevent 404s
         Route::get('items/create', [ItemController::class, 'create'])->name('items.create');
         Route::post('items', [ItemController::class, 'store'])->name('items.store');

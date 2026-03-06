@@ -1,42 +1,45 @@
 <script setup>
-import { useForm, Head, Link } from '@inertiajs/vue3';
+import { useForm, Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue';
 import Card from '@/components/ui/card/Card.vue';
 import { ArrowLeft, Save, Loader2, AlertCircle } from 'lucide-vue-next';
 
 const props = defineProps({ items: Array });
+const page = usePage();
+
+// Capture the registered name of the logged-in user for 'Released By'
+const authUserName = computed(() => page.props.auth.user.name);
 
 const form = useForm({
     item_id: '',
     type: 'In', 
     quantity: 1,
-    // Stock In specific fields
+    // Stock In: Manual Entry
     reference_no: '',
-    received_by: '',
+    received_by: '', // Initialized as empty for manual entry
     date_received: new Date().toISOString().substr(0, 10),
     unit_cost: 0,
-    // Stock Out specific fields
+    // Stock Out: System Captured
     released_to: '',
-    released_by: '',
+    released_by: authUserName.value, 
     department: '',
     purpose: '',
     date_released: new Date().toISOString().substr(0, 10),
 });
 
-// Helper to find the current stock of the selected item
 const selectedItem = computed(() => {
     return props.items.find(i => i.id === form.item_id);
 });
 
-// Updated logic para i-detect ang total stock at ang minimum stock limit
 const isInsufficient = computed(() => {
     if (form.type === 'Out' && selectedItem.value) {
-        // Condition 1: Pag mas marami ang ilalabas kaysa sa total na meron
-        const exceedsTotal = form.quantity > selectedItem.value.quantity;
-        
-        // Condition 2: Pag ang matitira ay bababa sa itinakdang Min. Stock Level
-        const fallsBelowMin = (selectedItem.value.quantity - form.quantity) < selectedItem.value.min_stock;
+        const currentQty = Number(selectedItem.value.quantity);
+        const moveQty = Number(form.quantity);
+        const minStock = Number(selectedItem.value.min_stock);
+
+        const exceedsTotal = moveQty > currentQty;
+        const fallsBelowMin = (currentQty - moveQty) < minStock;
         
         return exceedsTotal || fallsBelowMin;
     }
@@ -96,13 +99,8 @@ const submit = () => form.post(route('transactions.store'));
                                 :class="{'border-red-500 ring-1 ring-red-100 bg-red-50': isInsufficient || form.errors.quantity}" 
                                 required 
                             />
-
                             <p v-if="isInsufficient && !form.errors.quantity" class="mt-1 text-[10px] text-orange-600 font-bold flex items-center gap-1 animate-pulse">
                                 <AlertCircle class="w-3 h-3" /> Warning: Remaining stock will be below the minimum level.
-                            </p>
-
-                            <p v-if="form.errors.quantity" class="mt-1 text-[10px] text-red-600 font-bold flex items-center gap-1 p-2 bg-red-50 rounded-sm border border-red-100">
-                                <AlertCircle class="w-4 h-4" /> {{ form.errors.quantity }}
                             </p>
                         </div>
                         <div v-if="form.type === 'In'">
@@ -124,7 +122,7 @@ const submit = () => form.post(route('transactions.store'));
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Received By (Staff Name)</label>
-                            <input v-model="form.received_by" type="text" class="w-full border-slate-300 rounded-sm px-3 py-2.5 text-sm" placeholder="Who processed this delivery?" required />
+                            <input v-model="form.received_by" type="text" class="w-full border-slate-300 rounded-sm px-3 py-2.5 text-sm focus:ring-emerald-500" placeholder="Enter staff name..." required />
                         </div>
                     </div>
 
@@ -142,7 +140,7 @@ const submit = () => form.post(route('transactions.store'));
                         <div class="grid grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Released By (Authorized)</label>
-                                <input v-model="form.released_by" type="text" class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm" placeholder="Staff Name" required />
+                                <input v-model="form.released_by" type="text" class="w-full border-slate-200 bg-slate-50 text-slate-500 rounded-sm px-3 py-2 text-sm cursor-not-allowed" readonly required />
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Date Released</label>
@@ -156,11 +154,7 @@ const submit = () => form.post(route('transactions.store'));
                     </div>
 
                     <div class="pt-6 border-t border-slate-100 flex items-center justify-end gap-3">
-                        <button 
-                            type="submit" 
-                            :disabled="form.processing || isInsufficient" 
-                            class="bg-purple-900 hover:bg-slate-900 text-white px-8 py-2.5 text-xs font-bold rounded-sm flex items-center gap-2 disabled:opacity-50 transition-all uppercase tracking-widest shadow-md active:scale-95"
-                        >
+                        <button type="submit" :disabled="form.processing || (form.type === 'Out' && isInsufficient)" class="bg-purple-900 hover:bg-slate-900 text-white px-8 py-2.5 text-xs font-bold rounded-sm flex items-center gap-2 disabled:opacity-50 transition-all uppercase tracking-widest shadow-md">
                             <component :is="form.processing ? Loader2 : Save" class="w-4 h-4" :class="{'animate-spin': form.processing}" />
                             {{ form.processing ? 'Saving...' : 'Confirm Update' }}
                         </button>
