@@ -13,7 +13,7 @@ class TransactionController extends Controller
 {
     public function index()
     {
-        // 1. Get and Transform Stock In records
+        // 1. Kunin at i-transform ang Stock In records
         $stockIn = StockIn::with('item')->get()->map(function ($record) {
             return [
                 'id' => 'in-' . $record->id,
@@ -25,7 +25,7 @@ class TransactionController extends Controller
             ];
         });
 
-        // 2. Get and Transform Stock Out records
+        // 2. Kunin at i-transform ang Stock Out records
         $stockOut = StockOut::with('item')->get()->map(function ($record) {
             $dept = $record->department ? " [{$record->department}]" : "";
             return [
@@ -38,7 +38,7 @@ class TransactionController extends Controller
             ];
         });
 
-        // 3. Merge and Sort
+        // 3. I-merge at i-sort
         $mergedTransactions = $stockIn->concat($stockOut)
             ->sortByDesc('created_at')
             ->values();
@@ -49,11 +49,15 @@ class TransactionController extends Controller
     }
 
     public function create()
-    {
-        return Inertia::render('Transactions/Create', [
-            'items' => Item::select('id', 'name', 'product_code', 'quantity')->get()
-        ]);
-    }
+{
+    return Inertia::render('Transactions/Create', [
+        // Kinukuha natin ang mga items pati ang kanilang min_stock
+        'items' => Item::select('id', 'name', 'product_code', 'quantity', 'min_stock')->get(),
+        
+        // DITO NATIN IDINAGDAG: Kinukuha ang pangalan ng user na naka-login
+        'auth_name' => auth()->user()->name 
+    ]);
+}
 
     public function store(Request $request)
     {
@@ -74,35 +78,40 @@ class TransactionController extends Controller
         } else {
             $rules = array_merge($rules, [
                 'released_to' => 'required|string|max:255',
-                'released_by' => 'required|string|max:255', // Matches migration
+                'released_by' => 'required|string|max:255',
                 'department' => 'nullable|string|max:255',
                 'purpose' => 'nullable|string|max:255',
-                'date_released' => 'required|date', // Matches migration
+                'date_released' => 'required|date',
             ]);
         }
 
         $validated = $request->validate($rules);
 
-        // Database Transaction for Data Safety
-        DB::transaction(function () use ($request, $validated) {
+        // Database Transaction para sa Data Safety
+        return DB::transaction(function () use ($request, $validated) {
             $item = Item::findOrFail($request->item_id);
 
             if ($request->type === 'In') {
                 StockIn::create($validated);
                 $item->increment('quantity', $request->quantity);
             } else {
-                // Prevent negative stock
-                if ($item->quantity < $request->quantity) {
+                // 1. I-compute ang matitirang stock
+                $remainingStock = $item->quantity - $request->quantity;
+
+                // 2. HARD STOP CHECK: Minimum Stock Level
+                // Kung bababa sa min_stock, harangin ang transaction
+                if ($remainingStock < $item->min_stock) {
                     throw \Illuminate\Validation\ValidationException::withMessages([
-                        'quantity' => 'Insufficient stock. Current balance: ' . $item->quantity
+                        'quantity' => "Transaction Denied! Releasing {$request->quantity} units will drop the stock below the minimum level of {$item->min_stock}. (Current Balance: {$item->quantity})"
                     ]);
                 }
 
+                // 3. Kung pasado, i-record ang Stock Out at bawasan ang quantity
                 StockOut::create($validated);
                 $item->decrement('quantity', $request->quantity);
             }
-        });
 
-        return redirect()->route('transactions.index')->with('success', 'Stock movement recorded.');
+            return redirect()->route('transactions.index')->with('success', 'Stock movement recorded.');
+        });
     }
 }

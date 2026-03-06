@@ -3,8 +3,10 @@ import { useForm, Head, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue';
 import Card from '@/components/ui/card/Card.vue';
 import { ArrowLeft, Save, Loader2, Info } from 'lucide-vue-next';
+import { watch } from 'vue'; 
+import axios from 'axios'; 
 
-defineProps({
+const props = defineProps({
     categories: Array,
     units: Array
 });
@@ -15,8 +17,24 @@ const form = useForm({
     quantity: 0,
     min_stock: 0,
     category_id: '',
-    unit_id: '',
+    unit_id: '', 
     description: ''
+});
+
+// AUTO-GENERATE LOGIC:
+watch(() => form.category_id, async (newId) => {
+    if (newId) {
+        try {
+            const response = await axios.get(route('items.generate-code'), {
+                params: { category_id: newId }
+            });
+            form.product_code = response.data.next_code;
+        } catch (error) {
+            console.error("Hindi ma-generate ang product code:", error);
+        }
+    } else {
+        form.product_code = ''; 
+    }
 });
 
 const submit = () => {
@@ -56,7 +74,7 @@ const submit = () => {
                         </Card>
                         <Card class="p-4 bg-slate-100 rounded border border-slate-200">
                             <div class="flex gap-3">
-                                <Info class="w-5 h-5 text-slate-400 shrink-0" />
+                                <info class="w-5 h-5 text-slate-400 shrink-0" />
                                 <p class="text-xs text-slate-500 leading-relaxed">
                                     Fields marked with an asterisk are required for the official registry.
                                 </p>
@@ -73,18 +91,6 @@ const submit = () => {
                         
                         <form @submit.prevent="submit" class="p-6 space-y-5">
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Product Code *</label>
-                                <input 
-                                    v-model="form.product_code" 
-                                    type="text" 
-                                    placeholder="e.g. LAW-LIB-2024-01"
-                                    class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none transition-all placeholder:text-slate-300" 
-                                    required 
-                                />
-                                <div v-if="form.errors.product_code" class="text-red-600 text-[11px] mt-1 font-semibold">{{ form.errors.product_code }}</div>
-                            </div>
-
-                            <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Item Name *</label>
                                 <input 
                                     v-model="form.name" 
@@ -96,22 +102,34 @@ const submit = () => {
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Category</label>
-                                    <select v-model="form.category_id" class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm focus:ring-1 focus:ring-purple-600 outline-none bg-white">
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Category *</label>
+                                    <select v-model="form.category_id" class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm focus:ring-1 focus:ring-purple-600 outline-none bg-white" required>
                                         <option value="">Select Classification</option>
-                                        <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                                        <option v-for="cat in props.categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                                     </select>
+                                    <div v-if="form.errors.category_id" class="text-red-600 text-[11px] mt-1 font-semibold">{{ form.errors.category_id }}</div>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Unit of Measure</label>
-                                    <select v-model="form.unit_id" class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm focus:ring-1 focus:ring-purple-600 outline-none bg-white">
-                                        <option value="">Select Unit</option>
-                                        <option v-for="unit in units" :key="unit.id" :value="unit.id">{{ unit.name }}</option>
-                                    </select>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Product Code *</label>
+                                    <input 
+                                        v-model="form.product_code" 
+                                        type="text" 
+                                        placeholder="Auto-generated"
+                                        class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm focus:ring-1 focus:ring-purple-600 focus:border-purple-600 outline-none transition-all placeholder:text-slate-300 bg-slate-50" 
+                                        required 
+                                    />
+                                    <div v-if="form.errors.product_code" class="text-red-600 text-[11px] mt-1 font-semibold">{{ form.errors.product_code }}</div>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Unit of Measure</label>
+                                    <select v-model="form.unit_id" class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm focus:ring-1 focus:ring-purple-600 outline-none bg-white">
+                                        <option value="">Select Unit</option>
+                                        <option v-for="unit in props.units" :key="unit.id" :value="unit.id">{{ unit.name }}</option>
+                                    </select>
+                                </div>
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Initial Quantity</label>
                                     <input 
@@ -122,7 +140,9 @@ const submit = () => {
                                     />
                                     <div v-if="form.errors.quantity" class="text-red-600 text-[11px] mt-1 font-semibold">{{ form.errors.quantity }}</div>
                                 </div>
-                                
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Min. Stock Level</label>
                                     <input 

@@ -29,9 +29,16 @@ const selectedItem = computed(() => {
     return props.items.find(i => i.id === form.item_id);
 });
 
+// Updated logic para i-detect ang total stock at ang minimum stock limit
 const isInsufficient = computed(() => {
     if (form.type === 'Out' && selectedItem.value) {
-        return form.quantity > selectedItem.value.quantity;
+        // Condition 1: Pag mas marami ang ilalabas kaysa sa total na meron
+        const exceedsTotal = form.quantity > selectedItem.value.quantity;
+        
+        // Condition 2: Pag ang matitira ay bababa sa itinakdang Min. Stock Level
+        const fallsBelowMin = (selectedItem.value.quantity - form.quantity) < selectedItem.value.min_stock;
+        
+        return exceedsTotal || fallsBelowMin;
     }
     return false;
 });
@@ -80,12 +87,24 @@ const submit = () => form.post(route('transactions.store'));
                     <div class="grid grid-cols-2 gap-6">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Quantity to Move</label>
-                            <input v-model="form.quantity" type="number" step="0.1" min="0.1" class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm" :class="{'border-red-500 ring-1 ring-red-100': isInsufficient}" required />
-                            <p v-if="isInsufficient" class="mt-1 text-[10px] text-red-500 font-bold flex items-center gap-1">
-                                <AlertCircle class="w-3 h-3" /> Cannot release more than available stock.
+                            <input 
+                                v-model="form.quantity" 
+                                type="number" 
+                                step="0.1" 
+                                min="0.1" 
+                                class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm transition-all" 
+                                :class="{'border-red-500 ring-1 ring-red-100 bg-red-50': isInsufficient || form.errors.quantity}" 
+                                required 
+                            />
+
+                            <p v-if="isInsufficient && !form.errors.quantity" class="mt-1 text-[10px] text-orange-600 font-bold flex items-center gap-1 animate-pulse">
+                                <AlertCircle class="w-3 h-3" /> Warning: Remaining stock will be below the minimum level.
+                            </p>
+
+                            <p v-if="form.errors.quantity" class="mt-1 text-[10px] text-red-600 font-bold flex items-center gap-1 p-2 bg-red-50 rounded-sm border border-red-100">
+                                <AlertCircle class="w-4 h-4" /> {{ form.errors.quantity }}
                             </p>
                         </div>
-                        
                         <div v-if="form.type === 'In'">
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Unit Cost</label>
                             <input v-model="form.unit_cost" type="number" step="0.01" class="w-full border-slate-300 rounded-sm px-3 py-2 text-sm" />
