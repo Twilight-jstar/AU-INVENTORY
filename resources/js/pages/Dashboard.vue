@@ -76,8 +76,10 @@ const chartOptions = {
                     <p class="text-sm text-slate-500 mt-1 italic">Welcome back, {{ userName }}. Here is the current inventory status.</p>
                 </div>
                 
-                <a :href="route('items.index')" 
-                    class="inline-flex items-center px-4 py-2 bg-slate-900 hover:bg-purple-900 text-white text-[10px] font-bold rounded-sm shadow-sm transition-all uppercase tracking-[0.15em]">
+                <a 
+                    :href="route('reports.download')" 
+                    class="inline-flex items-center px-4 py-2 bg-slate-900 hover:bg-purple-900 text-white text-[10px] font-bold rounded-sm shadow-sm transition-all uppercase tracking-[0.15em]"
+                >
                     <FileText class="w-3.5 h-3.5 mr-2" />
                     Export Inventory Report
                 </a>
