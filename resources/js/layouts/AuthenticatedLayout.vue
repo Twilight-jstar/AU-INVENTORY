@@ -19,19 +19,27 @@ const isMobileMenuOpen = ref(false);
 const showUserMenu = ref(false); 
 const page = usePage();
 
+// 1. Extract name and role from the shared auth prop
 const userName = computed(() => page.props.auth.user.name);
+const userRole = computed(() => page.props.auth.user.role);
 
-const navItems = [
-    { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: 'dashboard' },
-    { name: 'Inventory Items', href: route('items.index'), icon: Package, active: 'items.*' },
-    { name: 'Asset Categories', href: route('categories.index'), icon: Tags, active: 'categories.*' },
-    { name: 'Measurement Units', href: route('units.index'), icon: Scale, active: 'units.*' },
-    { name: 'Audit Trail', href: route('transactions.index'), icon: HistoryIcon, active: 'transactions.*' },
+// 2. Define navigation with role restrictions
+const allNavItems = [
+    { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: 'dashboard', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
+    { name: 'Inventory Items', href: route('items.index'), icon: Package, active: 'items.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
+    { name: 'Asset Categories', href: route('categories.index'), icon: Tags, active: 'categories.*', roles: ['Admin', 'Clerk', 'Custodian'] },
+    { name: 'Measurement Units', href: route('units.index'), icon: Scale, active: 'units.*', roles: ['Admin', 'Clerk', 'Custodian'] },
+    { name: 'Audit Trail', href: route('transactions.index'), icon: HistoryIcon, active: 'transactions.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
 ];
+
+// 3. Computed property to filter items based on the current user's role
+const navItems = computed(() => {
+    return allNavItems.filter(item => item.roles.includes(userRole.value as string));
+});
 
 const pageTitle = computed(() => {
     if (page.props.title) return page.props.title;
-    const activeNav = navItems.find(item => route().current(item.active));
+    const activeNav = allNavItems.find(item => route().current(item.active as string));
     return activeNav ? activeNav.name : 'Inventory Management';
 });
 
@@ -60,7 +68,7 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
                         <Package class="w-7 h-7 text-purple-300" />
                         <span class="font-bold tracking-tight text-xl">ALF Inventory</span>
                     </div>
-                    <p class="text-[10px] text-purple-300/60 font-bold uppercase tracking-[0.2em]">Disbursement System</p>
+                    <p class="text-[10px] text-purple-300/60 font-bold uppercase tracking-[0.2em]">Inventory Management System</p>
                 </div>
             </div>
 
@@ -87,7 +95,7 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
                         </div>
                         <div class="flex flex-col overflow-hidden">
                             <span class="text-xs text-white font-bold truncate">{{ userName }}</span>
-                            <span class="text-[9px] text-purple-300/60 font-bold uppercase tracking-widest">USER</span>
+                            <span class="text-[9px] text-purple-300/60 font-bold uppercase tracking-widest">{{ userRole }}</span>
                         </div>
                     </div>
                     <ChevronUp class="w-4 h-4 text-purple-300 transition-transform" :class="{'rotate-180': showUserMenu}" />
@@ -132,9 +140,3 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
         </main>
     </div>
 </template>
-
-<style scoped>
-.pop-enter-active { transition: all 0.2s cubic-bezier(0.2, 1, 0.3, 1); }
-.pop-leave-active { transition: all 0.15s ease-in; }
-.pop-enter-from, .pop-leave-to { opacity: 0; transform: translateY(10px) scale(0.95); }
-</style>

@@ -13,16 +13,44 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Create the Administrator manually to include required fields
-        User::create([
-            'name' => 'Administrator',
-            'email' => 'admin@test.com',
-            'username' => 'admin_itc', // This satisfies the missing field error
-            'role' => 'admin',         // Ensure the role is set
-            'password' => Hash::make('password'),
-        ]);
+        // 1. Create a set of users for testing each role
+        // Note: We use Capitalized roles to match your AppServiceProvider Gates
+        $users = [
+            [
+                'name' => 'ITC Administrator',
+                'email' => 'admin@test.com',
+                'username' => 'admin_itc',
+                'role' => 'Admin', 
+                'password' => Hash::make('password'),
+            ],
+            [
+                'name' => 'Inventory Custodian',
+                'email' => 'custodian@test.com',
+                'username' => 'custodian_01',
+                'role' => 'Custodian',
+                'password' => Hash::make('password'),
+            ],
+            [
+                'name' => 'Inventory Clerk',
+                'email' => 'clerk@test.com',
+                'username' => 'clerk_01',
+                'role' => 'Clerk',
+                'password' => Hash::make('password'),
+            ],
+            [
+                'name' => 'Registry Viewer',
+                'email' => 'viewer@test.com',
+                'username' => 'viewer_01',
+                'role' => 'Viewer',
+                'password' => Hash::make('password'),
+            ],
+        ];
 
-        // 2. Call your existing specific seeders
+        foreach ($users as $userData) {
+            User::create($userData);
+        }
+
+        // 2. Call existing specific seeders
         $this->call([
             CategorySeeder::class,
             UnitSeeder::class,

@@ -2,49 +2,37 @@
 
 namespace App\Providers;
 
-use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
-    public function register(): void
-    {
-        //
-    }
-
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        $this->configureDefaults();
-    }
+        // 1. Admin: Full Access (Superuser)
+        Gate::before(function (User $user) {
+            if ($user->role === 'Admin') {
+                return true;
+            }
+        });
 
-    /**
-     * Configure default behaviors for production-ready applications.
-     */
-    protected function configureDefaults(): void
-    {
-        Date::use(CarbonImmutable::class);
+        // 2. Manage Inventory (Create/Edit)
+        // Allowed: Admin, Clerk, Custodian
+        Gate::define('manage-inventory', function (User $user) {
+            return in_array($user->role, ['Clerk', 'Custodian']);
+        });
 
-        DB::prohibitDestructiveCommands(
-            app()->isProduction(),
-        );
+        // 3. Delete Authority
+        // Allowed: Admin, Custodian
+        Gate::define('delete-inventory', function (User $user) {
+            return $user->role === 'Custodian';
+        });
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
-        );
+        // 4. View Only
+        // Allowed: Everyone
+        Gate::define('view-inventory', function (User $user) {
+            return in_array($user->role, ['Admin', 'Clerk', 'Custodian', 'Viewer']);
+        });
     }
 }

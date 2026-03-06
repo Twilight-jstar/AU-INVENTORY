@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -17,21 +19,30 @@ class FortifyServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        $this->configureRateLimiting();
+        // 1. RUN THE CONFIGURATION HELPERS
         $this->configureActions();
         $this->configureViews();
+        $this->configureRateLimiting();
+
+        // 2. DEFINE AUTHENTICATION LOGIC
+        Fortify::authenticateUsing(function ($request) {
+            $user = User::where('username', $request->username)->first();
+
+            if ($user && Hash::check($request->password, $user->password)) {
+                return $user;
+            }
+        });
     }
 
     private function configureActions(): void
     {
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        // Fortify::updateUserProfileInformationUsing(...)
-        // Fortify::updatePasswordsUsing(...)
     }
 
     private function configureViews(): void
     {
+        // Note: Ensure the path 'auth/Login' matches your resources/js/Pages folder casing
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'canRegister' => Features::enabled(Features::registration()),

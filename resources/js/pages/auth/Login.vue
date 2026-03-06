@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3'; // Import useForm
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -8,92 +8,79 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthBase from '@/layouts/AuthLayout.vue';
-import { register } from '@/routes';
-import { store } from '@/routes/login';
-import { request } from '@/routes/password';
+import { route } from 'ziggy-js';
+import register from '@/routes/register';
 
 defineProps<{
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
 }>();
+
+// Initialize the form data properly
+const form = useForm({
+    username: '',
+    password: '',
+    remember: false,
+});
+
+const submit = () => {
+    form.post(route('login'), {
+        onFinish: () => form.reset('password'),
+    });
+};
 </script>
 
 <template>
-    <AuthBase
-        title="Log in to your account"
-        description="Enter your email and password below to log in"
-    >
+    <AuthBase title="Log in" description="Enter your credentials">
         <Head title="Log in" />
 
-        <div
-            v-if="status"
-            class="mb-4 text-center text-sm font-medium text-green-600"
-        >
+        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
             {{ status }}
         </div>
 
-        <Form
-            v-bind="store.form()"
-            :reset-on-success="['password']"
-            v-slot="{ errors, processing }"
-            class="flex flex-col gap-6"
-        >
+        <form @submit.prevent="submit" class="flex flex-col gap-6">
             <div class="grid gap-6">
                 <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
+                    <Label for="username">Username</Label>
                     <Input
-                        id="email"
-                        type="email"
-                        name="email"
+                        id="username"
+                        v-model="form.username" 
+                        type="text"
                         required
                         autofocus
-                        :tabindex="1"
-                        autocomplete="email"
-                        placeholder="email@example.com"
+                        placeholder="Your username"
                     />
-                    <InputError :message="errors.email" />
+                    <InputError :message="form.errors.username" />
                 </div>
 
                 <div class="grid gap-2">
                     <div class="flex items-center justify-between">
                         <Label for="password">Password</Label>
-                        <TextLink
-                            v-if="canResetPassword"
-                            :href="request()"
-                            class="text-sm"
-                            :tabindex="5"
-                        >
+                        <TextLink v-if="canResetPassword" :href="route('password.request')" class="text-sm">
                             Forgot password?
                         </TextLink>
                     </div>
                     <Input
                         id="password"
+                        v-model="form.password"
                         type="password"
-                        name="password"
                         required
-                        :tabindex="2"
-                        autocomplete="current-password"
-                        placeholder="Password"
                     />
-                    <InputError :message="errors.password" />
+                    <InputError :message="form.errors.password" />
                 </div>
 
-                <div class="flex items-center justify-between">
-                    <Label for="remember" class="flex items-center space-x-3">
-                        <Checkbox id="remember" name="remember" :tabindex="3" />
-                        <span>Remember me</span>
-                    </Label>
+                <div class="flex items-center space-x-3">
+                    <Checkbox 
+                        id="remember" 
+                        :checked="form.remember" 
+                        @update:checked="(val: boolean) => form.remember = val" 
+                    />
+                    <Label for="remember">Remember me</Label>
                 </div>
 
-                <Button
-                    type="submit"
-                    class="mt-4 w-full"
-                    :tabindex="4"
-                    :disabled="processing"
-                    data-test="login-button"
-                >
-                    <Spinner v-if="processing" />
+                <Button type="submit" :disabled="form.processing">
+                    <Spinner v-if="form.processing" />
                     Log in
                 </Button>
             </div>
@@ -103,8 +90,8 @@ defineProps<{
                 v-if="canRegister"
             >
                 Don't have an account?
-                <TextLink :href="register()" :tabindex="5">Sign up</TextLink>
+                <TextLink :href="route('register')" :tabindex="5">Sign up</TextLink>
             </div>
-        </Form>
+        </form>
     </AuthBase>
 </template>
