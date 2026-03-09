@@ -8,9 +8,9 @@ import {
 } from 'lucide-vue-next';
 
 const props = defineProps({ 
-    transactions: Array,
-    departments: Array,
-    categories: Array
+    transactions: { type: Array, default: () => [] },
+    departments: { type: Array, default: () => [] },
+    categories: { type: Array, default: () => [] }
 });
 
 // State Management
@@ -19,21 +19,21 @@ const filterDept = ref('');
 const filterCategory = ref('');
 const startDate = ref('');
 const endDate = ref('');
-const sortBy = ref('latest'); // Default: Latest first
+const sortBy = ref('latest');
 const isModalOpen = ref(false);
 const selectedTransaction = ref(null);
 
 // Filter & Sort Logic
 const filteredTransactions = computed(() => {
-    let result = props.transactions;
+    let result = [...props.transactions];
 
-    // 1. Tab Filtering
+    // 1. Tab Filtering (In / Out)
     if (activeTab.value === 'in') result = result.filter(t => t.type === 'In');
     else if (activeTab.value === 'out') result = result.filter(t => t.type === 'Out');
 
     // 2. Department Filtering
     if (filterDept.value) {
-        result = result.filter(t => t.type === 'Out' && t.department === filterDept.value);
+        result = result.filter(t => t.department === filterDept.value);
     }
 
     // 3. Category Filtering
@@ -52,39 +52,32 @@ const filteredTransactions = computed(() => {
     }
 
     // 5. Sorting Logic
-    return [...result].sort((a, b) => {
-        if (sortBy.value === 'latest') {
-            // 1. Primary Sort: Date/Time
-            const dateDiff = new Date(b.created_at) - new Date(a.created_at);
-            if (dateDiff !== 0) return dateDiff;
-
-            // 2. Secondary Sort: Transaction ID Number
-            // This handles cases where dates are identical (e.g., Mar 9, 2026)
-            const idA = parseInt(a.id.replace(/[^0-9]/g, '')) || 0;
-            const idB = parseInt(b.id.replace(/[^0-9]/g, '')) || 0;
-            return idB - idA;
-        }
-        
-        if (sortBy.value === 'oldest') {
-            const dateDiff = new Date(a.created_at) - new Date(b.created_at);
-            if (dateDiff !== 0) return dateDiff;
+    return result.sort((a, b) => {
+        if (sortBy.value === 'latest' || sortBy.value === 'oldest') {
+            const dateA = new Date(a.created_at).getTime();
+            const dateB = new Date(b.created_at).getTime();
             
-            const idA = parseInt(a.id.replace(/[^0-9]/g, '')) || 0;
-            const idB = parseInt(b.id.replace(/[^0-9]/g, '')) || 0;
-            return idA - idB;
+            if (dateA !== dateB) {
+                return sortBy.value === 'latest' ? dateB - dateA : dateA - dateB;
+            }
+            
+            const idA = parseInt(String(a.id).replace(/[^0-9]/g, '')) || 0;
+            const idB = parseInt(String(b.id).replace(/[^0-9]/g, '')) || 0;
+            return sortBy.value === 'latest' ? idB - idA : idA - idB;
         }
 
-        if (sortBy.value === 'az') {
-            return (a.item?.name || '').localeCompare(b.item?.name || '');
-        }
-        if (sortBy.value === 'za') {
-            return (b.item?.name || '').localeCompare(a.item?.name || '');
-        }
+        if (sortBy.value === 'az') return (a.item?.name || '').localeCompare(b.item?.name || '');
+        if (sortBy.value === 'za') return (b.item?.name || '').localeCompare(a.item?.name || '');
         return 0;
     });
 });
 
 // Actions
+const exportDailyInReport = () => {
+    if (!startDate.value) return;
+    window.open(route('transactions.export-daily-in', { date: startDate.value }), '_blank');
+};
+
 const exportDepartmentReport = () => {
     if (!filterDept.value) return;
     window.open(route('transactions.export-department', { department: filterDept.value }), '_blank');
@@ -101,6 +94,7 @@ const closeViewModal = () => {
 };
 
 const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', { 
         year: 'numeric', 
         month: 'short', 
@@ -130,11 +124,16 @@ const resetFilters = () => {
                     </div>
                     <div>
                         <h1 class="text-lg font-black text-slate-900 leading-none uppercase tracking-tight">Transaction History</h1>
-                        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Arranged by Category & Product Code</p>
+                        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Inventory Flow Control</p>
                     </div>
                 </div>
                 
                 <div class="flex items-center gap-2">
+                    <button v-if="activeTab === 'in' && startDate" @click="exportDailyInReport" 
+                        class="px-4 py-2 bg-emerald-600 text-white text-[10px] font-black rounded-lg hover:bg-emerald-700 uppercase flex items-center gap-2 transition-all shadow-md shadow-emerald-100">
+                        <Download class="w-3.5 h-3.5" /> Export Daily In
+                    </button>
+
                     <button v-if="filterDept" @click="exportDepartmentReport" 
                         class="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 uppercase flex items-center gap-2 transition-all shadow-md shadow-blue-100">
                         <Download class="w-3.5 h-3.5" /> Export {{ filterDept }} Report
@@ -158,7 +157,7 @@ const resetFilters = () => {
 
                 <div class="relative">
                     <Building2 class="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
-                    <select v-model="filterDept" class="w-full h-9 pl-9 pr-3 bg-white border-slate-200 rounded-lg text-[10px] font-bold uppercase focus:ring-slate-900 focus:border-slate-900">
+                    <select v-model="filterDept" class="w-full h-9 pl-9 pr-3 bg-white border-slate-200 rounded-lg text-[10px] font-bold uppercase focus:ring-slate-900">
                         <option value="">Filter Dept</option>
                         <option v-for="dept in departments" :key="dept.id" :value="dept.name">{{ dept.name }}</option>
                     </select>
@@ -166,7 +165,7 @@ const resetFilters = () => {
 
                 <div class="relative">
                     <Filter class="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
-                    <select v-model="filterCategory" class="w-full h-9 pl-9 pr-3 bg-white border-slate-200 rounded-lg text-[10px] font-bold uppercase focus:ring-slate-900 focus:border-slate-900">
+                    <select v-model="filterCategory" class="w-full h-9 pl-9 pr-3 bg-white border-slate-200 rounded-lg text-[10px] font-bold uppercase focus:ring-slate-900">
                         <option value="">All Categories</option>
                         <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                     </select>
@@ -174,7 +173,7 @@ const resetFilters = () => {
 
                 <div class="relative">
                     <ArrowUpDown class="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
-                    <select v-model="sortBy" class="w-full h-9 pl-9 pr-3 bg-white border-slate-200 rounded-lg text-[10px] font-bold uppercase focus:ring-slate-900 focus:border-slate-900">
+                    <select v-model="sortBy" class="w-full h-9 pl-9 pr-3 bg-white border-slate-200 rounded-lg text-[10px] font-bold uppercase focus:ring-slate-900">
                         <option value="latest">Latest First</option>
                         <option value="oldest">Oldest First</option>
                         <option value="az">Item (A-Z)</option>
@@ -199,29 +198,30 @@ const resetFilters = () => {
 
             <Card class="border-none ring-1 ring-slate-200 shadow-xl bg-white rounded-2xl overflow-hidden">
                 <div class="overflow-x-auto"> 
-                    <table class="w-full text-left border-separate border-spacing-0 table-fixed">
+                    <table class="w-full text-left border-separate border-spacing-0">
                         <thead>
                             <tr class="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-tight">
-                                <th class="py-3 px-3 border-b border-slate-100 w-[110px]">Ref / Date</th>
-                                <th class="py-3 px-2 border-b border-slate-100 w-[150px]">Item Description</th> <th class="py-3 px-2 border-b border-slate-100 w-[160px]">Office / Dept</th>
+                                <th class="py-3 px-3 border-b border-slate-100 w-[120px]">Ref / Date</th>
+                                <th class="py-3 px-2 border-b border-slate-100 w-[180px]">Item Description</th> 
+                                <th class="py-3 px-2 border-b border-slate-100 w-[160px]">Office / Dept</th>
                                 <th class="py-3 px-2 border-b border-slate-100 w-[140px]">Personnel</th>
-                                <th class="py-3 px-2 text-center border-b border-slate-100 w-[60px]">Qty</th>
-                                <th class="py-3 px-4 text-right border-b border-slate-100 w-[90px]">Actions</th>
+                                <th class="py-3 px-2 text-center border-b border-slate-100 w-[80px]">Qty</th>
+                                <th class="py-3 px-4 text-right border-b border-slate-100 w-[100px]">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-50">
                             <tr v-for="trx in filteredTransactions" :key="trx.id" class="hover:bg-slate-50/50 transition-colors group">
-                                <td class="py-2 px-3">
+                                <td class="py-3 px-3">
                                     <div class="flex flex-col leading-tight">
                                         <span class="text-[11px] font-black text-slate-700">#{{ trx.id }}</span>
                                         <span class="text-[10px] font-bold text-slate-400 uppercase">{{ formatDate(trx.created_at) }}</span>
                                     </div>
                                 </td>
                                 
-                                <td class="py-2 px-2">
-                                    <div class="flex flex-col leading-tight overflow-hidden">
+                                <td class="py-3 px-2">
+                                    <div class="flex flex-col leading-tight max-w-[250px]">
                                         <span class="font-bold text-slate-900 uppercase text-[12px] truncate">
-                                            {{ trx.item?.name }}
+                                            {{ trx.item?.name || 'Unknown Item' }}
                                         </span>
                                         <span class="text-[10px] font-mono text-slate-400 tracking-tighter">
                                             {{ trx.item?.product_code }}
@@ -229,26 +229,26 @@ const resetFilters = () => {
                                     </div>
                                 </td>
                                 
-                                <td class="py-2 px-2">
+                                <td class="py-3 px-2">
                                     <span :class="trx.type === 'In' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-slate-600 bg-slate-50 border-slate-200'" 
                                             class="text-[9px] font-black uppercase px-2 py-0.5 rounded border leading-none inline-block max-w-full tracking-tighter">
                                         {{ trx.department || (trx.type === 'In' ? 'INBOUND' : 'GENERAL') }}
                                     </span>
                                 </td>
                                 
-                                <td class="py-2 px-2">
+                                <td class="py-3 px-2">
                                     <span class="text-[11px] text-slate-700 font-bold uppercase truncate block tracking-tight">
-                                        {{ trx.received_by || trx.released_to }}
+                                        {{ trx.received_by || trx.released_to || 'System' }}
                                     </span>
                                 </td>
                                 
-                                <td class="py-2 px-2 text-center">
+                                <td class="py-3 px-2 text-center">
                                     <span :class="trx.type === 'In' ? 'text-emerald-600' : 'text-purple-600'" class="font-black text-[12px]">
                                         {{ trx.type === 'In' ? '+' : '-' }}{{ trx.quantity }}
                                     </span>
                                 </td>
                                 
-                                <td class="py-2 px-4 text-right">
+                                <td class="py-3 px-4 text-right">
                                     <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button @click="openViewModal(trx)" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
                                             <Eye class="w-4 h-4" />
@@ -272,10 +272,10 @@ const resetFilters = () => {
         </div>
 
         <div v-if="isModalOpen" 
-            class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all"
+            class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
             @click.self="closeViewModal">
             
-            <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200 transform transition-all animate-in fade-in zoom-in duration-200">
+            <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
                 <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                     <div class="flex items-center gap-3">
                         <div :class="selectedTransaction?.type === 'In' ? 'bg-emerald-100 text-emerald-600' : 'bg-purple-100 text-purple-600'" class="p-2 rounded-xl">

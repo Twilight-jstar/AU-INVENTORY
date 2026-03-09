@@ -67,10 +67,10 @@ const submit = () => {
                         <p class="text-[10px] text-purple-600 font-black uppercase tracking-widest">Inventory Control Unit</p>
                     </div>
                 </div>
-                <div class="bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-right">
+                <!-- <div class="bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-right">
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-1">Session ID</p>
                     <p class="text-sm font-mono font-bold text-slate-700 tracking-tight">{{ tempRef }}</p>
-                </div>
+                </div> -->
             </div>
 
             <form @submit.prevent="submit" class="space-y-6">

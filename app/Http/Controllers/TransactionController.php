@@ -76,6 +76,36 @@ class TransactionController extends Controller
         ]);
     }
 
+    public function exportDailyIn(Request $request)
+    {
+        $request->validate(['date' => 'required|date']);
+        $date = $request->date;
+
+        $transactions = StockIn::whereDate('created_at', $date)
+            ->with(['item.category', 'item.unit'])
+            ->get()
+            ->map(function ($trx) {
+                // We cast to (object) so the Blade can use -> notation
+                return (object) [
+                    'product_code'   => $trx->item->product_code ?? 'N/A',
+                    // This MUST match the Blade template's variable name
+                    'total_quantity' => $trx->quantity, 
+                    'item'           => $trx->item, 
+                    'combined_remarks' => "Supplier: " . ($trx->supplier_name ?? 'N/A'),
+                ];
+            });
+
+        $formattedDate = \Carbon\Carbon::parse($date)->format('M d, Y');
+        
+        return Pdf::loadView('pdf.bulk_transactions', [
+            'transactions'  => $transactions,
+            'title'         => "DAILY STOCK IN REPORT: " . $formattedDate,
+            'department'    => 'INBOUND / SUPPLIER',
+        ])
+        ->setPaper('a4', 'landscape')
+        ->stream("Daily-Stock-In-{$date}.pdf");
+    }
+
     public function stockOut()
     {
         return Inertia::render('Transactions/StockOut', [
@@ -152,41 +182,40 @@ class TransactionController extends Controller
             ->with('success', 'Bulk issuance completed and stock levels updated.');
     }
 
-public function exportByDepartment(Request $request)
-{
-    $request->validate(['department' => 'required|string']);
-    $department = $request->department;
+    public function exportByDepartment(Request $request)
+    {
+        $request->validate(['department' => 'required|string']);
+        $department = $request->department;
 
-    $transactions = StockOut::where('department', $department)
-        ->with(['item.category', 'item.unit'])
-        ->get()
-        // Group by Category Name para magkadikit ang magkakauri
-        ->groupBy(function($trx) {
-            return $trx->item->category->name ?? 'UNCATEGORIZED';
-        })
-        ->sortKeys() // Ayusin ang Categories (A-Z)
-        ->map(function ($itemsInArchive) {
-            // Sa loob ng bawat category, i-group ang same items at i-sort by Product Code
-            return $itemsInArchive->groupBy('item_id')->map(function ($group) {
+        $transactions = StockOut::where('department', $department)
+            ->with(['item.category', 'item.unit'])
+            ->get()
+            ->groupBy('item_id') // Group by item first to sum quantities
+            ->map(function ($group) {
                 $first = $group->first();
+                
                 return (object) [
-                    'product_code' => $first->item->product_code,
-                    'item' => $first->item,
+                    'product_code'   => $first->item->product_code ?? 'N/A',
                     'total_quantity' => $group->sum('quantity'),
+                    'item'           => $first->item, // Keep the item object for unit/name access
                     'combined_remarks' => $group->map(function($trx) {
-                        return ($trx->released_to ?? 'N/A') . ($trx->purpose ? " ({$trx->purpose})" : "");
-                    })->unique()->implode(', ')
+                            return ($trx->released_to ?? 'N/A') . ($trx->purpose ? " ({$trx->purpose})" : "");
+                        })->unique()->implode(', ')
                 ];
-            })->sortBy('product_code');
-        })
-        ->flatten(1); // Gawing isang listahan na lang para sa Blade
+            })
+            ->sortBy('product_code')
+            ->values(); // Reset keys to ensure a clean array for the loop
 
-    $title = "STOCK ISSUANCE FORM";
+        $title = "STOCK ISSUANCE FORM";
 
-    return Pdf::loadView('pdf.bulk_transactions', compact('transactions', 'title', 'department'))
+        return Pdf::loadView('pdf.bulk_transactions', [
+            'transactions' => $transactions,
+            'title'        => $title,
+            'department'   => $department
+        ])
         ->setPaper('letter', 'portrait')
         ->stream("Registry-{$department}.pdf");
-}
+    }
 
     public function exportPdf($id)
     {
