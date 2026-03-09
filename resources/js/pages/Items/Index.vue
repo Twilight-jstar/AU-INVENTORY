@@ -57,7 +57,7 @@ const isLowStock = (item) => {
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-50 text-slate-600 text-[11px] font-bold uppercase tracking-[0.1em] border-b border-slate-200">
-                                <th class="py-4 px-6">Catalog Code</th>
+                                <th class="py-4 px-6">Product Code</th>
                                 <th class="py-4 px-6">Item Description</th>
                                 <th class="py-4 px-6">Classification</th>
                                 <th class="py-4 px-6 text-center">Current Stock</th>

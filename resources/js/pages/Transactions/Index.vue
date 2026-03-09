@@ -1,139 +1,367 @@
 <script setup>
+import { ref, computed } from 'vue';
 import { Link, Head } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue';
 import Card from '@/components/ui/card/Card.vue';
-import { History, Plus, ArrowUpRight, ArrowDownLeft, Clock, Download } from 'lucide-vue-next';
+import { 
+    History, Download, Eye, PackagePlus, PackageMinus, XCircle, User, Building2, Box, Calendar, Filter, ArrowUpDown
+} from 'lucide-vue-next';
 
-defineProps({ 
-    transactions: Array 
+const props = defineProps({ 
+    transactions: Array,
+    departments: Array,
+    categories: Array
 });
 
-const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+// State Management
+const activeTab = ref('all');
+const filterDept = ref('');
+const filterCategory = ref('');
+const startDate = ref('');
+const endDate = ref('');
+const sortBy = ref('latest'); // Default: Latest first
+const isModalOpen = ref(false);
+const selectedTransaction = ref(null);
+
+// Filter & Sort Logic
+const filteredTransactions = computed(() => {
+    let result = props.transactions;
+
+    // 1. Tab Filtering
+    if (activeTab.value === 'in') result = result.filter(t => t.type === 'In');
+    else if (activeTab.value === 'out') result = result.filter(t => t.type === 'Out');
+
+    // 2. Department Filtering
+    if (filterDept.value) {
+        result = result.filter(t => t.type === 'Out' && t.department === filterDept.value);
+    }
+
+    // 3. Category Filtering
+    if (filterCategory.value) {
+        result = result.filter(t => t.item?.category_id == filterCategory.value);
+    }
+
+    // 4. Date Range Filtering
+    if (startDate.value && endDate.value) {
+        const start = new Date(startDate.value).setHours(0,0,0,0);
+        const end = new Date(endDate.value).setHours(23,59,59,999);
+        result = result.filter(t => {
+            const trxDate = new Date(t.created_at).getTime();
+            return trxDate >= start && trxDate <= end;
+        });
+    }
+
+    // 5. Sorting Logic
+    return [...result].sort((a, b) => {
+        if (sortBy.value === 'latest') {
+            // 1. Primary Sort: Date/Time
+            const dateDiff = new Date(b.created_at) - new Date(a.created_at);
+            if (dateDiff !== 0) return dateDiff;
+
+            // 2. Secondary Sort: Transaction ID Number
+            // This handles cases where dates are identical (e.g., Mar 9, 2026)
+            const idA = parseInt(a.id.replace(/[^0-9]/g, '')) || 0;
+            const idB = parseInt(b.id.replace(/[^0-9]/g, '')) || 0;
+            return idB - idA;
+        }
+        
+        if (sortBy.value === 'oldest') {
+            const dateDiff = new Date(a.created_at) - new Date(b.created_at);
+            if (dateDiff !== 0) return dateDiff;
+            
+            const idA = parseInt(a.id.replace(/[^0-9]/g, '')) || 0;
+            const idB = parseInt(b.id.replace(/[^0-9]/g, '')) || 0;
+            return idA - idB;
+        }
+
+        if (sortBy.value === 'az') {
+            return (a.item?.name || '').localeCompare(b.item?.name || '');
+        }
+        if (sortBy.value === 'za') {
+            return (b.item?.name || '').localeCompare(a.item?.name || '');
+        }
+        return 0;
     });
+});
+
+// Actions
+const exportDepartmentReport = () => {
+    if (!filterDept.value) return;
+    window.open(route('transactions.export-department', { department: filterDept.value }), '_blank');
+};
+
+const openViewModal = (trx) => { 
+    selectedTransaction.value = trx; 
+    isModalOpen.value = true; 
+};
+
+const closeViewModal = () => { 
+    isModalOpen.value = false; 
+    selectedTransaction.value = null; 
+};
+
+const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+    });
+};
+
+const resetFilters = () => { 
+    filterDept.value = ''; 
+    filterCategory.value = ''; 
+    startDate.value = ''; 
+    endDate.value = ''; 
+    activeTab.value = 'all';
+    sortBy.value = 'latest';
 };
 </script>
 
 <template>
-    <Head title="Activity Log" />
-
+    <Head title="Transaction History" />
     <AuthenticatedLayout>
-        <div class="space-y-6 max-w-7xl mx-auto">
-            <div class="flex justify-between items-end border-b border-slate-200 pb-6">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Activity Log</h1>
-                    <p class="text-sm text-slate-500 italic mt-1">History of all stock movements and adjustments.</p>
+        <div class="max-w-[1600px] mx-auto p-4 space-y-4">
+            
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-slate-900 rounded-xl text-white shadow-lg shadow-slate-200">
+                        <History class="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-black text-slate-900 leading-none uppercase tracking-tight">Transaction History</h1>
+                        <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Arranged by Category & Product Code</p>
+                    </div>
                 </div>
                 
-                <div class="flex items-center gap-3">
-                    <Link 
-                        :href="route('transactions.create')" 
-                        class="bg-slate-900 hover:bg-purple-900 text-white px-4 py-2 text-xs font-bold rounded-sm shadow-sm transition-all uppercase tracking-widest flex items-center gap-2"
-                    >
-                        <Plus class="w-3.5 h-3.5" />
-                        Record Movement
+                <div class="flex items-center gap-2">
+                    <button v-if="filterDept" @click="exportDepartmentReport" 
+                        class="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 uppercase flex items-center gap-2 transition-all shadow-md shadow-blue-100">
+                        <Download class="w-3.5 h-3.5" /> Export {{ filterDept }} Report
+                    </button>
+
+                    <Link :href="route('transactions.stock-in')" class="bg-emerald-600 text-white px-4 py-2 text-[10px] font-black rounded-lg uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100">
+                        <PackagePlus class="w-3.5 h-3.5" /> Stock In
+                    </Link>
+                    <Link :href="route('transactions.stock-out')" class="bg-slate-900 text-white px-4 py-2 text-[10px] font-black rounded-lg uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all shadow-md shadow-slate-200">
+                        <PackageMinus class="w-3.5 h-3.5" /> Stock Out
                     </Link>
                 </div>
             </div>
 
-            <Card class="p-0 border-none ring-1 ring-slate-200 shadow-none overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <div class="bg-white p-1 rounded-lg border border-slate-200 flex h-9 shadow-sm">
+                    <button @click="activeTab = 'all'" :class="activeTab === 'all' ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-50'" class="flex-1 text-[9px] font-black uppercase rounded-md transition-all">All</button>
+                    <button @click="activeTab = 'in'" :class="activeTab === 'in' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-50'" class="flex-1 text-[9px] font-black uppercase rounded-md transition-all">In</button>
+                    <button @click="activeTab = 'out'" :class="activeTab === 'out' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:bg-slate-50'" class="flex-1 text-[9px] font-black uppercase rounded-md transition-all">Out</button>
+                </div>
+
+                <div class="relative">
+                    <Building2 class="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
+                    <select v-model="filterDept" class="w-full h-9 pl-9 pr-3 bg-white border-slate-200 rounded-lg text-[10px] font-bold uppercase focus:ring-slate-900 focus:border-slate-900">
+                        <option value="">Filter Dept</option>
+                        <option v-for="dept in departments" :key="dept.id" :value="dept.name">{{ dept.name }}</option>
+                    </select>
+                </div>
+
+                <div class="relative">
+                    <Filter class="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
+                    <select v-model="filterCategory" class="w-full h-9 pl-9 pr-3 bg-white border-slate-200 rounded-lg text-[10px] font-bold uppercase focus:ring-slate-900 focus:border-slate-900">
+                        <option value="">All Categories</option>
+                        <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                    </select>
+                </div>
+
+                <div class="relative">
+                    <ArrowUpDown class="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
+                    <select v-model="sortBy" class="w-full h-9 pl-9 pr-3 bg-white border-slate-200 rounded-lg text-[10px] font-bold uppercase focus:ring-slate-900 focus:border-slate-900">
+                        <option value="latest">Latest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="az">Item (A-Z)</option>
+                        <option value="za">Item (Z-A)</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-2 flex gap-2 items-center">
+                    <div class="flex-1 relative">
+                        <Calendar class="absolute left-2.5 top-2.5 w-3 h-3 text-slate-400" />
+                        <input type="date" v-model="startDate" class="w-full h-9 pl-8 pr-2 bg-white border-slate-200 rounded-lg text-[10px] font-bold focus:ring-slate-900">
+                    </div>
+                    <div class="flex-1 relative">
+                        <Calendar class="absolute left-2.5 top-2.5 w-3 h-3 text-slate-400" />
+                        <input type="date" v-model="endDate" class="w-full h-9 pl-8 pr-2 bg-white border-slate-200 rounded-lg text-[10px] font-bold focus:ring-slate-900">
+                    </div>
+                    <button @click="resetFilters" class="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                        <XCircle class="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
+
+            <Card class="border-none ring-1 ring-slate-200 shadow-xl bg-white rounded-2xl overflow-hidden">
+                <div class="overflow-x-auto"> 
+                    <table class="w-full text-left border-separate border-spacing-0 table-fixed">
                         <thead>
-                            <tr class="bg-slate-50 text-slate-600 text-[11px] font-bold uppercase tracking-[0.1em] border-b border-slate-200">
-                                <th class="py-4 px-6 flex items-center gap-2">
-                                    <Clock class="w-3 h-3" />
-                                    Date & Time
-                                </th>
-                                <th class="py-4 px-6">Item Description</th>
-                                <th class="py-4 px-6">Type</th>
-                                <th class="py-4 px-6 text-center">Amount</th>
-                                <th class="py-4 px-6">Transaction Details</th>
-                                <th class="py-4 px-6 text-center">Action</th>
+                            <tr class="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-tight">
+                                <th class="py-3 px-3 border-b border-slate-100 w-[110px]">Ref / Date</th>
+                                <th class="py-3 px-2 border-b border-slate-100 w-[150px]">Item Description</th> <th class="py-3 px-2 border-b border-slate-100 w-[160px]">Office / Dept</th>
+                                <th class="py-3 px-2 border-b border-slate-100 w-[140px]">Personnel</th>
+                                <th class="py-3 px-2 text-center border-b border-slate-100 w-[60px]">Qty</th>
+                                <th class="py-3 px-4 text-right border-b border-slate-100 w-[90px]">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="text-slate-700 text-sm divide-y divide-slate-100">
-                            <tr v-for="trx in transactions" :key="trx.id" class="hover:bg-slate-50/50 transition-colors group">
-                                <td class="py-4 px-6 text-slate-500 text-xs font-medium">
-                                    {{ formatDate(trx.created_at) }}
-                                </td>
-
-                                <td class="py-4 px-6">
-                                    <div class="font-bold text-slate-900 uppercase tracking-tight">
-                                        {{ trx.item?.name || 'Unknown Item' }}
-                                    </div>
-                                    <div class="text-[10px] text-slate-400 font-mono tracking-tighter">
-                                        {{ trx.item?.product_code || 'N/A' }}
+                        <tbody class="divide-y divide-slate-50">
+                            <tr v-for="trx in filteredTransactions" :key="trx.id" class="hover:bg-slate-50/50 transition-colors group">
+                                <td class="py-2 px-3">
+                                    <div class="flex flex-col leading-tight">
+                                        <span class="text-[11px] font-black text-slate-700">#{{ trx.id }}</span>
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase">{{ formatDate(trx.created_at) }}</span>
                                     </div>
                                 </td>
-
-                                <td class="py-4 px-6">
-                                    <div 
-                                        class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                                        :class="trx.type === 'In' 
-                                            ? 'text-emerald-700 bg-emerald-50 border border-emerald-100' 
-                                            : 'text-slate-600 bg-slate-50 border border-slate-200'"
-                                    >
-                                        <component :is="trx.type === 'In' ? ArrowUpRight : ArrowDownLeft" class="w-3 h-3" />
-                                        {{ trx.type === 'In' ? 'Stock In' : 'Stock Out' }}
+                                
+                                <td class="py-2 px-2">
+                                    <div class="flex flex-col leading-tight overflow-hidden">
+                                        <span class="font-bold text-slate-900 uppercase text-[12px] truncate">
+                                            {{ trx.item?.name }}
+                                        </span>
+                                        <span class="text-[10px] font-mono text-slate-400 tracking-tighter">
+                                            {{ trx.item?.product_code }}
+                                        </span>
                                     </div>
                                 </td>
-
-                                <td class="py-4 px-6 text-center font-mono">
-                                    <span 
-                                        class="px-2 py-0.5 rounded-sm border font-bold"
-                                        :class="trx.type === 'In' 
-                                            ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
-                                            : 'bg-slate-50 border-slate-200 text-slate-700'"
-                                    >
+                                
+                                <td class="py-2 px-2">
+                                    <span :class="trx.type === 'In' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-slate-600 bg-slate-50 border-slate-200'" 
+                                            class="text-[9px] font-black uppercase px-2 py-0.5 rounded border leading-none inline-block max-w-full tracking-tighter">
+                                        {{ trx.department || (trx.type === 'In' ? 'INBOUND' : 'GENERAL') }}
+                                    </span>
+                                </td>
+                                
+                                <td class="py-2 px-2">
+                                    <span class="text-[11px] text-slate-700 font-bold uppercase truncate block tracking-tight">
+                                        {{ trx.received_by || trx.released_to }}
+                                    </span>
+                                </td>
+                                
+                                <td class="py-2 px-2 text-center">
+                                    <span :class="trx.type === 'In' ? 'text-emerald-600' : 'text-purple-600'" class="font-black text-[12px]">
                                         {{ trx.type === 'In' ? '+' : '-' }}{{ trx.quantity }}
                                     </span>
                                 </td>
-
-                                <td class="py-4 px-6 text-slate-500 italic text-xs leading-relaxed">
-                                    <span class="font-bold text-slate-700">Supplier: {{ trx.supplier_id || 'No ID' }}</span>
-                                    <br>
-                                    {{ trx.note || 'Standard Adjustment' }}
-                                </td>
-
-                                <td class="py-4 px-6 text-center">
-                                    <a 
-                                        :href="route('transactions.export-pdf', trx.id)" 
-                                        target="_blank"
-                                        class="inline-flex items-center gap-1.5 bg-purple-700 hover:bg-purple-900 text-white px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-wider transition-colors shadow-sm"
-                                    >
-                                        <Download class="w-3 h-3" />
-                                        PDF
-                                    </a>    
-                                </td>
-
-                            </tr>
-                            
-                            <tr v-if="transactions.length === 0">
-                                <td colspan="6" class="py-20 text-center text-slate-400">
-                                    <div class="flex flex-col items-center gap-3">
-                                        <History class="w-10 h-10 text-slate-100" />
-                                        <div class="space-y-1">
-                                            <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Log is Empty</p>
-                                            <p class="text-[11px] italic">No activity has been recorded yet.</p>
-                                        </div>
+                                
+                                <td class="py-2 px-4 text-right">
+                                    <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button @click="openViewModal(trx)" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                                            <Eye class="w-4 h-4" />
+                                        </button>
+                                        <a :href="route('transactions.export-pdf', trx.raw_id)" target="_blank" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                                            <Download class="w-4 h-4" />
+                                        </a>
                                     </div>
+                                </td>
+                            </tr>
+                            <tr v-if="filteredTransactions.length === 0">
+                                <td colspan="6" class="py-20 text-center">
+                                    <History class="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">No matching transactions found</p>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </Card>
+        </div>
 
-            <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase font-bold tracking-widest">
-                <div class="w-1 h-1 bg-emerald-400 rounded-full animate-pulse"></div>
-                System Active • Verified Records
+        <div v-if="isModalOpen" 
+            class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all"
+            @click.self="closeViewModal">
+            
+            <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200 transform transition-all animate-in fade-in zoom-in duration-200">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <div class="flex items-center gap-3">
+                        <div :class="selectedTransaction?.type === 'In' ? 'bg-emerald-100 text-emerald-600' : 'bg-purple-100 text-purple-600'" class="p-2 rounded-xl">
+                            <History class="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight">Transaction Details</h3>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">{{ selectedTransaction?.id }}</p>
+                        </div>
+                    </div>
+                    <button @click="closeViewModal" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                        <XCircle class="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div class="p-6 space-y-6">
+                    <div class="flex gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div class="p-3 bg-white rounded-xl shadow-sm border border-slate-200">
+                            <Box class="w-6 h-6 text-slate-400" />
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 font-black uppercase mb-1">Item Information</p>
+                            <h4 class="text-xs font-black text-slate-900 uppercase">{{ selectedTransaction?.item?.name }}</h4>
+                            <p class="text-[10px] font-mono text-slate-500">{{ selectedTransaction?.item?.product_code }}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="space-y-1">
+                            <p class="text-[9px] text-slate-400 font-black uppercase flex items-center gap-1.5">
+                                <Building2 class="w-3 h-3" /> Office / Dept
+                            </p>
+                            <p class="text-[11px] font-bold text-slate-700 uppercase">
+                                {{ selectedTransaction?.department || (selectedTransaction?.type === 'In' ? 'Supplier' : 'General') }}
+                            </p>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-[9px] text-slate-400 font-black uppercase flex items-center gap-1.5">
+                                <User class="w-3 h-3" /> Handled By
+                            </p>
+                            <p class="text-[11px] font-bold text-slate-700 uppercase">
+                                {{ selectedTransaction?.received_by || selectedTransaction?.released_to || 'N/A' }}
+                            </p>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-[9px] text-slate-400 font-black uppercase">Quantity Changed</p>
+                            <p :class="selectedTransaction?.type === 'In' ? 'text-emerald-600' : 'text-purple-600'" class="text-lg font-black">
+                                {{ selectedTransaction?.type === 'In' ? '+' : '-' }}{{ selectedTransaction?.quantity }}
+                            </p>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-[9px] text-slate-400 font-black uppercase">Date Recorded</p>
+                            <p class="text-[11px] font-bold text-slate-700 uppercase">{{ formatDate(selectedTransaction?.created_at) }}</p>
+                        </div>
+                    </div>
+
+                    <div v-if="selectedTransaction?.note" class="pt-4 border-t border-slate-100">
+                        <p class="text-[9px] text-slate-400 font-black uppercase mb-2">Remarks / Notes</p>
+                        <div class="p-3 bg-amber-50/50 border border-amber-100 rounded-xl text-[11px] text-amber-900 italic font-medium">
+                            "{{ selectedTransaction.note }}"
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-2">
+                    <a :href="route('transactions.export-pdf', selectedTransaction?.raw_id)" 
+                        target="_blank"
+                        class="flex-1 py-3 bg-slate-900 text-white text-[10px] font-black rounded-xl uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-800 transition-all">
+                        <Download class="w-4 h-4" /> Download Report
+                    </a>
+                    <button @click="closeViewModal" class="px-6 py-3 bg-white border border-slate-200 text-slate-500 text-[10px] font-black rounded-xl uppercase hover:bg-slate-100 transition-all">
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>
 </template>
+
+<style scoped>
+tbody tr {
+    animation: slideUp 0.3s ease-out forwards;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>

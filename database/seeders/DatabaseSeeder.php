@@ -54,6 +54,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CategorySeeder::class,
             UnitSeeder::class,
+            DepartmentSeeder::class,
+            UserSeeder::class, // This will create additional users if needed
         ]);
     }
 }

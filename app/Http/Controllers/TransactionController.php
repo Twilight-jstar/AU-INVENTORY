@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Item;
 use App\Models\StockIn;
 use App\Models\StockOut;
+use App\Models\Department;
+use App\Models\Category;
+use App\Models\Supplier; // Added for StockIn form
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
@@ -14,132 +17,174 @@ class TransactionController extends Controller
 {
     public function index()
     {
-        // 1. Get and Transform Stock In records
-        $stockIn = StockIn::with(['item', 'supplier'])->get()->map(function ($record) {
+        $stockIn = StockIn::with(['item.category', 'supplier'])->get()->map(function ($record) {
             return [
-                'id' => 'in-' . $record->id,
+                'id' => 'IN-' . str_pad($record->id, 5, '0', STR_PAD_LEFT),
+                'raw_id' => 'in-' . $record->id,
                 'created_at' => $record->created_at,
                 'item' => $record->item,
                 'type' => 'In',
                 'quantity' => $record->quantity,
-                'unit_cost' => $record->unit_cost,
-                'supplier_id' => $record->supplier_id, 
-                'note' => "Supplier: " . ($record->supplier->name ?? $record->supplier_id ?? 'N/A') . " | Ref: " . ($record->reference_no ?? 'N/A') . " | Cost: ₱" . number_format($record->unit_cost ?? 0, 2),
+                'received_by' => $record->received_by,
+                'released_to' => null,
+                'department' => null,
+                'note' => "Supplier: " . ($record->supplier->name ?? 'N/A'),
             ];
         });
 
-        // 2. Kunin at i-transform ang Stock Out records
-        $stockOut = StockOut::with('item')->get()->map(function ($record) {
-            $dept = $record->department ? " [{$record->department}]" : "";
+        $stockOut = StockOut::with(['item.category'])->get()->map(function ($record) {
             return [
-                'id' => 'out-' . $record->id,
+                'id' => 'OUT-' . str_pad($record->id, 5, '0', STR_PAD_LEFT),
+                'raw_id' => 'out-' . $record->id,
                 'created_at' => $record->created_at,
                 'item' => $record->item,
                 'type' => 'Out',
                 'quantity' => $record->quantity,
-                'note' => ($record->purpose ?? 'Release') . " | To: " . ($record->released_to ?? 'N/A') . $dept,
+                'department' => $record->department,
+                'released_to' => $record->released_to,
+                'released_by' => $record->released_by,
+                'note' => $record->purpose ?? 'Release',
             ];
         });
 
-        // 3. I-merge at i-sort
+        // Combined Sorting: Precise Timestamp + Numeric ID Tie-breaker for default arrangement
         $mergedTransactions = $stockIn->concat($stockOut)
-            ->sortByDesc('created_at')
+            ->sort(function ($a, $b) {
+                // Primary sort: Date/Time descending
+                $dateCompare = $b['created_at'] <=> $a['created_at'];
+                if ($dateCompare !== 0) return $dateCompare;
+
+                // Secondary sort: Numeric ID suffix descending (e.g. 00002 > 00001)
+                $idA = (int) filter_var($a['id'], FILTER_SANITIZE_NUMBER_INT);
+                $idB = (int) filter_var($b['id'], FILTER_SANITIZE_NUMBER_INT);
+                return $idB <=> $idA;
+            })
             ->values();
 
         return Inertia::render('Transactions/Index', [
-            'transactions' => $mergedTransactions
+            'transactions' => $mergedTransactions,
+            'departments' => Department::where('is_active', true)->orderBy('name')->get(),
+            'categories' => Category::orderBy('name')->get(),
         ]);
     }
 
-    public function create()
-{
-    return Inertia::render('Transactions/Create', [
-        // Kinukuha natin ang mga items pati ang kanilang min_stock
-        'items' => Item::select('id', 'name', 'product_code', 'quantity', 'min_stock')->get(),
-        
-        // DITO NATIN IDINAGDAG: Kinukuha ang pangalan ng user na naka-login
-        'auth_name' => auth()->user()->name 
-    ]);
-}
+    public function stockIn()
+    {
+        return Inertia::render('Transactions/StockIn', [
+            'items' => Item::orderBy('name')->get(),
+            'suppliers' => [] 
+        ]);
+    }
+
+    public function stockOut()
+    {
+        return Inertia::render('Transactions/StockOut', [
+            'items' => Item::where('quantity', '>', 0)->orderBy('name')->get(), 
+            'departments' => Department::where('is_active', true)->orderBy('name')->get(),
+        ]);
+    }
 
     public function store(Request $request)
     {
-        // Validation Rules
-        $rules = [
+        // 1. Change validation to string since you don't have a suppliers table
+        $validated = $request->validate([
             'item_id' => 'required|exists:items,id',
-            'type' => 'required|in:In,Out',
             'quantity' => 'required|numeric|min:0.1',
-        ];
+            'received_by' => 'required|string|max:255',
+            'supplier_id' => 'required|string|max:255', // Changed from exists:suppliers
+            'date_received' => 'required|date',
+            'unit_cost' => 'nullable|numeric',
+        ]);
 
-        if ($request->type === 'In') {
-            $rules = array_merge($rules, [
-                'received_by' => 'required|string|max:255',
-                'reference_no' => 'nullable|string|max:255',
-                'unit_cost' => 'nullable|numeric|min:0',
-                'date_received' => 'required|date',
+        DB::transaction(function () use ($validated) {
+            // 2. Map 'supplier_id' (the text from Vue) to whatever your DB column is
+            // If your StockIn model uses 'supplier_name', change the key below:
+            StockIn::create([
+                'item_id' => $validated['item_id'],
+                'quantity' => $validated['quantity'],
+                'received_by' => $validated['received_by'],
+                'supplier_name' => $validated['supplier_id'], // Adjust column name if needed
+                'date_received' => $validated['date_received'],
+                'unit_cost' => $validated['unit_cost'] ?? 0,
             ]);
-        } else {
-            $rules = array_merge($rules, [
-                'released_to' => 'required|string|max:255',
-                'released_by' => 'required|string|max:255',
-                'department' => 'nullable|string|max:255',
-                'purpose' => 'nullable|string|max:255',
-                'date_released' => 'required|date',
-            ]);
-        }
 
-        $validated = $request->validate($rules);
-
-        // Database Transaction para sa Data Safety
-        return DB::transaction(function () use ($request, $validated) {
-            $item = Item::findOrFail($request->item_id);
-
-            if ($request->type === 'In') {
-                StockIn::create($validated);
-                $item->increment('quantity', $request->quantity);
-            } else {
-                // 1. I-compute ang matitirang stock
-                $remainingStock = $item->quantity - $request->quantity;
-
-                // 2. HARD STOP CHECK: Minimum Stock Level
-                // Kung bababa sa min_stock, harangin ang transaction
-                if ($remainingStock < $item->min_stock) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
-                        'quantity' => "Transaction Denied! Releasing {$request->quantity} units will drop the stock below the minimum level of {$item->min_stock}. (Current Balance: {$item->quantity})"
-                    ]);
-                }
-
-                // 3. Kung pasado, i-record ang Stock Out at bawasan ang quantity
-                StockOut::create($validated);
-                $item->decrement('quantity', $request->quantity);
-            }
-
-            return redirect()->route('transactions.index')->with('success', 'Stock movement recorded.');
+            // 3. Use 'quantity' instead of 'stock' to match your items table
+            $item = Item::find($validated['item_id']);
+            $item->increment('quantity', $validated['quantity']); 
         });
+
+        return redirect()->route('transactions.index')
+            ->with('success', 'Stock-in recorded successfully.');
+    }
+
+    public function store_bulk_out(Request $request)
+    {
+        $validated = $request->validate([
+            // 1. Match 'line_items' from your Vue form
+            'line_items' => 'required|array|min:1',
+            'line_items.*.item_id' => 'required|exists:items,id',
+            'line_items.*.quantity' => 'required|numeric|min:0.1',
+            'department' => 'required|string',
+            'released_to' => 'required|string',
+            'purpose' => 'nullable|string',
+            'date_released' => 'required|date', // Added validation for date
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['line_items'] as $itemData) {
+                StockOut::create([
+                    'item_id' => $itemData['item_id'],
+                    'quantity' => $itemData['quantity'],
+                    'department' => $validated['department'],
+                    'released_to' => $validated['released_to'],
+                    'purpose' => $validated['purpose'],
+                    'date_released' => $validated['date_released'],
+                    'released_by' => auth()->user()->name,
+                ]);
+
+                // 2. Corrected from 'stock' to 'quantity'
+                $item = Item::findOrFail($itemData['item_id']);
+                $item->decrement('quantity', $itemData['quantity']);
+            }
+        });
+
+        return redirect()->route('transactions.index')
+            ->with('success', 'Bulk issuance completed and stock levels updated.');
+    }
+
+    public function exportByDepartment(Request $request)
+    {
+        $request->validate(['department' => 'required|string']);
+        $department = $request->department;
+
+        // We fetch from StockOut, so we explicitly label each as 'Out'
+        $transactions = StockOut::where('department', $department)
+            ->with(['item.category'])
+            ->get()
+            ->map(function ($trx) {
+                $trx->type = 'Out'; 
+                return $trx;
+            });
+
+        $title = "Movement Registry Report: " . $department;
+        $type = 'Out';
+
+        return Pdf::loadView('pdf.bulk_transactions', compact('transactions', 'title', 'type', 'department'))
+            ->setPaper('a4', 'landscape')
+            ->stream("Registry-{$department}.pdf");
     }
 
     public function exportPdf($id)
     {
-        // 1. Check kung Stock In (may 'in-' sa unahan)
         if (str_starts_with($id, 'in-')) {
-            $realId = str_replace('in-', '', $id);
-            $transaction = StockIn::with('item')->findOrFail($realId);
-            
-            $transaction->type = 'In'; // Manual nating nilalagyan ng type
-            $pdf = Pdf::loadView('pdf.transaction', compact('transaction'));
-            return $pdf->download('Stock-In-Report-' . $realId . '.pdf');
+            $transaction = StockIn::with('item')->findOrFail(str_replace('in-', '', $id));
+            $transaction->type = 'In';
+        } else {
+            $transaction = StockOut::with('item')->findOrFail(str_replace('out-', '', $id));
+            $transaction->type = 'Out';
         }
-
-        // 2. Check kung Stock Out (may 'out-' sa unahan)
-        if (str_starts_with($id, 'out-')) {
-            $realId = str_replace('out-', '', $id);
-            $transaction = StockOut::with('item')->findOrFail($realId);
-            
-            $transaction->type = 'Out'; // Manual nating nilalagyan ng type
-            $pdf = Pdf::loadView('pdf.transaction', compact('transaction'));
-            return $pdf->download('Stock-Out-Report-' . $realId . '.pdf');
-        }
-
-        abort(404, 'Transaction not found.');
+        
+        return Pdf::loadView('pdf.transaction', compact('transaction'))
+            ->stream("Trx-{$id}.pdf");
     }
 }
