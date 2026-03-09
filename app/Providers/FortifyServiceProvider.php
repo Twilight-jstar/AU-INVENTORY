@@ -40,16 +40,29 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
     }
 
-    private function configureViews(): void
+    // 👇 ETO YUNG PINALITAN NATIN NA BUONG SECTION 👇
+private function configureViews(): void
     {
-        // Note: Ensure the path 'auth/Login' matches your resources/js/Pages folder casing
+        // Login View
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'canRegister' => Features::enabled(Features::registration()),
             'status' => $request->session()->get('status'),
         ]));
 
+        // Register View
         Fortify::registerView(fn () => Inertia::render('auth/Register'));
+
+        // Forgot Password View
+        Fortify::requestPasswordResetLinkView(fn () => Inertia::render('auth/ForgotPassword', [
+            'status' => session('status'),
+        ]));
+
+        // Reset Password View (TINANGGAL ANG 'Profile/')
+        Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/ResetPassword', [
+            'email' => $request->email,
+            'token' => $request->route('token'),
+        ]));
     }
 
     private function configureRateLimiting(): void

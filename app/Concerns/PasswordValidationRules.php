@@ -14,7 +14,17 @@ trait PasswordValidationRules
      */
     protected function passwordRules(): array
     {
-        return ['required', 'string', Password::default(), 'confirmed'];
+        return [
+            'required',
+            'string',
+            Password::min(8)        // Minimum of 8 characters
+                ->letters()         // Dapat may letters
+                ->mixedCase()       // Dapat may uppercase (A-Z) at lowercase (a-z)
+                ->numbers()         // Dapat may numero (0-9)
+                ->symbols(),        // Dapat may special character (!, @, #, $, etc.)
+            'max:32',               // Maximum of 32 characters para hindi masyadong mahaba
+            'confirmed'             // Hahanapin yung `password_confirmation` field sa form
+        ];
     }
 
     /**

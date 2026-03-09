@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { useForm, Head } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,23 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { login } from '@/routes';
-import { email } from '@/routes/password';
 
+// Tinatanggap ang 'status' galing sa Fortify/Laravel session
 defineProps<{
     status?: string;
 }>();
+
+// Inertia Form Helper
+const form = useForm({
+    email: '',
+});
+
+// Submit function gamit ang direct URL path
+const submit = () => {
+    form.post('/forgot-password', {
+        onFinish: () => form.reset('email'),
+    });
+};
 </script>
 
 <template>
@@ -24,37 +36,39 @@ defineProps<{
 
         <div
             v-if="status"
-            class="mb-4 text-center text-sm font-medium text-green-600"
+            class="mb-4 text-center text-sm font-medium text-green-600 dark:text-green-400"
         >
             {{ status }}
         </div>
 
         <div class="space-y-6">
-            <Form v-bind="email.form()" v-slot="{ errors, processing }">
+            <form @submit.prevent="submit">
                 <div class="grid gap-2">
                     <Label for="email">Email address</Label>
                     <Input
                         id="email"
                         type="email"
-                        name="email"
-                        autocomplete="off"
+                        v-model="form.email"
+                        required
                         autofocus
+                        autocomplete="username"
                         placeholder="email@example.com"
+                        :class="{ 'border-red-500': form.errors.email }"
                     />
-                    <InputError :message="errors.email" />
+                    <InputError :message="form.errors.email" />
                 </div>
 
                 <div class="my-6 flex items-center justify-start">
                     <Button
+                        type="submit"
                         class="w-full"
-                        :disabled="processing"
-                        data-test="email-password-reset-link-button"
+                        :disabled="form.processing"
                     >
-                        <Spinner v-if="processing" />
+                        <Spinner v-if="form.processing" class="mr-2" />
                         Email password reset link
                     </Button>
                 </div>
-            </Form>
+            </form>
 
             <div class="space-x-1 text-center text-sm text-muted-foreground">
                 <span>Or, return to</span>

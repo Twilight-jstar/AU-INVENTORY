@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3'; // Standard Inertia useForm
+import { computed } from 'vue';
+import { Head, useForm } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,6 @@ import { Spinner } from '@/components/ui/spinner';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { route } from 'ziggy-js';
 
-// Use the standard Inertia form helper for better type safety and reliability
 const form = useForm({
     name: '',
     username: '',
@@ -17,6 +17,20 @@ const form = useForm({
     role: '',
     password: '',
     password_confirmation: '',
+});
+
+// Titingnan nito kung na-meet na ng user yung lahat ng rules
+const isPasswordValid = computed(() => {
+    const p = form.password;
+    if (!p) return false;
+    
+    const hasUpper = /[A-Z]/.test(p);
+    const hasLower = /[a-z]/.test(p);
+    const hasNumber = /\d/.test(p);
+    const hasSymbol = /[\W_]/.test(p); // Che-check kung may special character
+    const isLengthValid = p.length >= 8 && p.length <= 32;
+
+    return hasUpper && hasLower && hasNumber && hasSymbol && isLengthValid;
 });
 
 const submit = () => {
@@ -105,6 +119,9 @@ const submit = () => {
                             :tabindex="5"
                             placeholder="••••••••"
                         />
+                        <p v-if="!isPasswordValid" class="text-[0.8rem] text-muted-foreground">
+                            Must be 8-32 characters, with an uppercase, lowercase, number, and symbol.
+                        </p>
                         <InputError :message="form.errors.password" />
                     </div>
                     <div class="grid gap-2">
