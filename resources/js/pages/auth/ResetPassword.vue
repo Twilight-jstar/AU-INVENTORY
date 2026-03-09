@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
+//  Idinagdag ko ang computed dito 
+import { ref, computed } from 'vue'; 
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,23 @@ const props = defineProps<{
 }>();
 
 const inputEmail = ref(props.email);
+
+// Gumawa tayo ng variable para ma-track ang tina-type na password 
+const inputPassword = ref('');
+
+// Ang checker natin para sa rules 
+const isPasswordValid = computed(() => {
+    const p = inputPassword.value;
+    if (!p) return false;
+    
+    const hasUpper = /[A-Z]/.test(p);
+    const hasLower = /[a-z]/.test(p);
+    const hasNumber = /\d/.test(p);
+    const hasSymbol = /[\W_]/.test(p);
+    const isLengthValid = p.length >= 8 && p.length <= 32;
+
+    return hasUpper && hasLower && hasNumber && hasSymbol && isLengthValid;
+});
 </script>
 
 <template>
@@ -52,10 +70,13 @@ const inputEmail = ref(props.email);
                         type="password"
                         name="password"
                         autocomplete="new-password"
-                        class="mt-1 block w-full"
+                        v-model="inputPassword" class="mt-1 block w-full"
                         autofocus
                         placeholder="Password"
                     />
+                    <p v-if="!isPasswordValid" class="text-[0.8rem] text-muted-foreground">
+                        Must be 8-32 characters, with an uppercase, lowercase, number, and symbol.
+                    </p>
                     <InputError :message="errors.password" />
                 </div>
 
