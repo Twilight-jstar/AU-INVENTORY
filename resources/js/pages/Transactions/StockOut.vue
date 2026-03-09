@@ -5,7 +5,8 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue';
 import Card from '@/components/ui/card/Card.vue';
 import { 
     ArrowLeft, Save, Loader2, AlertCircle, Plus, Trash2, 
-    Hash, Building2, UserCircle, FileText, Calendar 
+    Hash, Building2, UserCircle, FileText, Calendar, 
+    AlertTriangle // BAGO: In-import natin ito para sa warning icon
 } from 'lucide-vue-next';
 
 const props = defineProps({ 
@@ -18,7 +19,7 @@ const tempRef = `SO-${Math.floor(1000 + Math.random() * 9000)}`;
 
 const form = useForm({
     released_to: '',
-    released_by: page.props.auth.user.name, 
+    released_by: page.props.auth.user?.name || 'Authorized Personnel', 
     department: '',
     purpose: '',
     date_released: new Date().toISOString().substr(0, 10),
@@ -35,12 +36,12 @@ const removeItemRow = (index) => {
     if (form.line_items.length > 1) form.line_items.splice(index, 1);
 };
 
-// Logic: Check if any item will fall below the school's minimum stock levels
-const hasInsufficientStock = computed(() => {
+// Iba-block lang nito kung MAS MARAMI sa available stock ang ire-release.
+const isExceedingAvailableStock = computed(() => {
     return form.line_items.some(line => {
         const item = props.items.find(i => i.id === line.item_id);
         if (!item) return false;
-        return (Number(item.quantity) - Number(line.quantity)) < Number(item.min_stock);
+        return Number(line.quantity) > Number(item.quantity);
     });
 });
 
@@ -135,11 +136,16 @@ const submit = () => {
                                             {{ item.name }} (Available: {{ item.quantity }})
                                         </option>
                                     </select>
-                                    <div v-if="line.item_id" class="mt-1 ml-1">
-                                        <p v-if="props.items.find(i => i.id === line.item_id && (i.quantity - line.quantity) < i.min_stock)" class="text-[9px] text-red-500 font-bold uppercase flex items-center gap-1">
-                                            <AlertCircle class="w-3 h-3" /> Critical Stock Level Risk
+                                    
+                                    <div v-if="line.item_id" class="mt-1 ml-1 space-y-1">
+                                        <p v-if="props.items.find(i => i.id === line.item_id && line.quantity > i.quantity)" class="text-[9px] text-red-500 font-bold uppercase flex items-center gap-1">
+                                            <AlertCircle class="w-3 h-3" /> Exceeds available stock!
+                                        </p>
+                                        <p v-else-if="props.items.find(i => i.id === line.item_id && (i.quantity - line.quantity) <= i.min_stock)" class="text-[9px] text-amber-500 font-bold uppercase flex items-center gap-1">
+                                            <AlertTriangle class="w-3 h-3" /> Will drop below minimum stock
                                         </p>
                                     </div>
+
                                 </td>
                                 <td class="p-4 px-6">
                                     <div class="relative">
@@ -169,8 +175,8 @@ const submit = () => {
                     </div>
                     
                     <div class="flex items-center gap-4">
-                        <p v-if="hasInsufficientStock" class="text-[10px] text-red-500 font-black uppercase">Stock levels too low to proceed</p>
-                        <button type="submit" :disabled="form.processing || hasInsufficientStock" 
+                        <p v-if="isExceedingAvailableStock" class="text-[10px] text-red-500 font-black uppercase">Cannot exceed available stock</p>
+                        <button type="submit" :disabled="form.processing || isExceedingAvailableStock" 
                             class="bg-slate-900 hover:bg-purple-900 text-white px-12 py-3.5 text-[10px] font-black rounded-xl flex items-center gap-2 uppercase tracking-[0.1em] transition-all shadow-xl shadow-slate-200 disabled:opacity-50">
                             <component :is="form.processing ? Loader2 : Save" class="w-4 h-4" :class="{'animate-spin': form.processing}" />
                             {{ form.processing ? 'Verifying...' : 'Complete Issuance' }}

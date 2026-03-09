@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'; 
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'; 
 import { Link, usePage } from '@inertiajs/vue3'; 
 import { 
     Package, 
@@ -12,7 +12,10 @@ import {
     X,
     User,
     ChevronUp,
-    ShieldAlert
+    ShieldAlert,
+    CircleCheck,
+    CircleAlert,
+    TriangleAlert
 } from 'lucide-vue-next';
 import { route } from 'ziggy-js';
 
@@ -20,8 +23,36 @@ const isMobileMenuOpen = ref(false);
 const showUserMenu = ref(false); 
 const page = usePage();
 
-const userName = computed(() => page.props.auth.user.name);
-const userRole = computed(() => page.props.auth.user.role);
+const userName = computed(() => page.props.auth.user?.name || 'Guest User');
+const userRole = computed(() => page.props.auth.user?.role || 'Viewer');
+
+// ============================================================
+// FIX: PINALAKAS NA NOTIFICATION LOGIC
+// ============================================================
+const showNotification = ref(false);
+
+watch(() => page.props.flash, (newFlash) => {
+    // Para makita mo sa Console (F12) kung ano ang pinapadala ng Laravel
+    console.log("System Flash Trace:", JSON.parse(JSON.stringify(newFlash)));
+
+    // Checheck natin kung may laman kahit alin sa tatlo
+    const hasFlash = newFlash && (newFlash.success || newFlash.error || newFlash.warning);
+
+    if (hasFlash) {
+        // Reset visibility para mag-trigger ang animation
+        showNotification.value = false;
+        
+        setTimeout(() => {
+            showNotification.value = true;
+            
+            // Mawawala after 5 seconds
+            setTimeout(() => {
+                showNotification.value = false;
+            }, 5000);
+        }, 100);
+    }
+}, { deep: true, immediate: true }); 
+// ============================================================
 
 const navigationGroups = [
     {
@@ -76,6 +107,29 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
 <template>
     <div class="min-h-screen flex flex-col md:flex-row relative bg-slate-50">
         
+        <Transition name="fade-slide">
+            <div v-if="showNotification" class="fixed top-6 right-6 z-[9999] max-w-md w-full flex flex-col gap-2">
+                
+                <div v-if="$page.props.flash?.success" class="bg-emerald-500 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3 border border-emerald-400">
+                    <CircleCheck class="w-5 h-5 text-white shrink-0 mt-0.5" />
+                    <div class="flex-1 text-sm font-bold">{{ $page.props.flash.success }}</div>
+                    <button @click="showNotification = false" class="text-white/80 hover:text-white shrink-0"><X class="w-4 h-4" /></button>
+                </div>
+
+                <div v-if="$page.props.flash?.error" class="bg-rose-500 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3 border border-rose-400">
+                    <CircleAlert class="w-5 h-5 text-white shrink-0 mt-0.5" />
+                    <div class="flex-1 text-sm font-bold">{{ $page.props.flash.error }}</div>
+                    <button @click="showNotification = false" class="text-white/80 hover:text-white shrink-0"><X class="w-4 h-4" /></button>
+                </div>
+
+                <div v-if="$page.props.flash?.warning" class="bg-amber-500 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3 border border-amber-400">
+                    <TriangleAlert class="w-5 h-5 text-white shrink-0 mt-0.5" />
+                    <div class="flex-1 text-sm font-bold">{{ $page.props.flash.warning }}</div>
+                    <button @click="showNotification = false" class="text-white/80 hover:text-white shrink-0"><X class="w-4 h-4" /></button>
+                </div>
+            </div>
+        </Transition>
+
         <aside class="hidden md:flex flex-col w-64 bg-purple-900 sticky top-0 h-screen z-20 shadow-2xl border-r border-purple-800">
             <div class="p-6">
                 <div class="flex flex-col gap-1">
@@ -94,7 +148,6 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
                     <h3 class="px-4 text-[9px] font-black text-purple-300/30 uppercase tracking-[0.2em] mb-1">
                         {{ group.label }}
                     </h3>
-                    
                     <div class="space-y-0.5">
                         <Link 
                             v-for="item in group.items" 
@@ -112,14 +165,6 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
                 </div>
             </nav>
 
-            <div v-if="userRole !== 'Viewer'" class="mx-4 mb-4 px-3 py-2 bg-white/5 border border-white/5 rounded-xl">
-                <div class="flex items-center gap-1.5 mb-0.5">
-                    <ShieldAlert class="w-2.5 h-2.5 text-purple-400/80" />
-                    <span class="text-[8px] font-black text-purple-400/80 uppercase tracking-[0.15em]">System Live</span>
-                </div>
-                <p class="text-[9px] text-purple-100/40 leading-tight">Monitoring active logs.</p>
-            </div>
-
             <div class="p-4 user-menu-container border-t border-purple-800 bg-purple-950/30">
                 <div class="p-3 rounded-2xl flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer" @click.stop="showUserMenu = !showUserMenu">
                     <div class="flex items-center gap-3 overflow-hidden">
@@ -133,73 +178,31 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
                     </div>
                     <ChevronUp class="w-4 h-4 text-purple-300 transition-transform duration-300" :class="{'rotate-180': showUserMenu}" />
                 </div>
-
-                <Transition name="pop">
-                    <div v-if="showUserMenu" class="absolute bottom-24 left-4 right-4 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50">
-                        <Link 
-                            :href="route('logout')" 
-                            method="post" 
-                            as="button"
-                            class="flex w-full items-center gap-3 px-5 py-4 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                            <LogOut class="w-4 h-4" />
-                            SIGN OUT OF SYSTEM
-                        </Link>
-                    </div>
-                </Transition>
             </div>
         </aside>
 
         <main class="flex-1 relative z-10 flex flex-col h-screen overflow-hidden">
-            
-            <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-20 overflow-hidden">
-                <img src="/images/bg.png" alt="ALF Logo Watermark" class="w-[100%] md:w-[80%] h-auto object-contain">
-            </div>
-
             <header class="w-full bg-white/70 backdrop-blur-xl border-b border-slate-200 px-6 md:px-10 py-5">
                 <div class="max-w-7xl mx-auto flex items-center justify-between">
                     <div>
                         <h2 class="text-lg font-bold text-slate-800 tracking-tight leading-none uppercase">
                             {{ pageTitle }}
                         </h2>
-                        <div class="flex items-center gap-2 mt-1.5">
-                            <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Official Registry</span>
-                        </div>
                     </div>
                 </div>
             </header>
-
             <div class="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar">
                 <div class="max-w-7xl mx-auto">
-                    <div class="relative z-10">
-                        <slot />
-                    </div>
+                    <slot />
                 </div>
             </div>
-
         </main>
     </div>
 </template>
 
 <style scoped>
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
-}
-.no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-
-.pop-enter-active {
-    transition: all 0.3s ease-out;
-}
-.pop-leave-active {
-    transition: all 0.2s ease-in;
-}
-.pop-enter-from,
-.pop-leave-to {
-    opacity: 0;
-    transform: translateY(10px) scale(0.95);
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+.fade-slide-enter-from, .fade-slide-leave-to { opacity: 0; transform: translateY(-20px) translateX(20px); }
 </style>

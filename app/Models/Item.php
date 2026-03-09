@@ -15,25 +15,31 @@ class Item extends Model
         'product_code',
         'name',
         'quantity',
-        'min_stock', // Added this to match your migration
+        'min_stock',
         'unit_id',
         'category_id',
         'description'
     ];
 
-    // An item belongs to one Category
+    // ============================================================
+    // 👇 ITO ANG DINAGDAG KO (VERY IMPORTANT) 👇
+    // Sinisiguro nito na laging "Number" ang turing sa stock values
+    // ============================================================
+    protected $casts = [
+        'quantity' => 'integer',
+        'min_stock' => 'integer',
+    ];
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    // An item belongs to one Unit
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);
     }
 
-    // Relationships for the Stock In and Stock Out tables you created
     public function stockIns(): HasMany
     {
         return $this->hasMany(StockIn::class);
@@ -45,7 +51,7 @@ class Item extends Model
     }
 
     /**
-     * Optional: Helper to check if stock is low
+     * Helper to check if stock is low
      */
     public function isLowStock(): bool
     {

@@ -7,7 +7,7 @@ use App\Models\StockIn;
 use App\Models\StockOut;
 use App\Models\Department;
 use App\Models\Category;
-use App\Models\Supplier; // Added for StockIn form
+use App\Models\Supplier; 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
@@ -47,14 +47,11 @@ class TransactionController extends Controller
             ];
         });
 
-        // Combined Sorting: Precise Timestamp + Numeric ID Tie-breaker for default arrangement
         $mergedTransactions = $stockIn->concat($stockOut)
             ->sort(function ($a, $b) {
-                // Primary sort: Date/Time descending
                 $dateCompare = $b['created_at'] <=> $a['created_at'];
                 if ($dateCompare !== 0) return $dateCompare;
 
-                // Secondary sort: Numeric ID suffix descending (e.g. 00002 > 00001)
                 $idA = (int) filter_var($a['id'], FILTER_SANITIZE_NUMBER_INT);
                 $idB = (int) filter_var($b['id'], FILTER_SANITIZE_NUMBER_INT);
                 return $idB <=> $idA;
@@ -86,29 +83,25 @@ class TransactionController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Change validation to string since you don't have a suppliers table
         $validated = $request->validate([
             'item_id' => 'required|exists:items,id',
             'quantity' => 'required|numeric|min:0.1',
             'received_by' => 'required|string|max:255',
-            'supplier_id' => 'required|string|max:255', // Changed from exists:suppliers
+            'supplier_id' => 'required|string|max:255', 
             'date_received' => 'required|date',
             'unit_cost' => 'nullable|numeric',
         ]);
 
         DB::transaction(function () use ($validated) {
-            // 2. Map 'supplier_id' (the text from Vue) to whatever your DB column is
-            // If your StockIn model uses 'supplier_name', change the key below:
             StockIn::create([
                 'item_id' => $validated['item_id'],
                 'quantity' => $validated['quantity'],
                 'received_by' => $validated['received_by'],
-                'supplier_name' => $validated['supplier_id'], // Adjust column name if needed
+                'supplier_name' => $validated['supplier_id'], 
                 'date_received' => $validated['date_received'],
                 'unit_cost' => $validated['unit_cost'] ?? 0,
             ]);
 
-            // 3. Use 'quantity' instead of 'stock' to match your items table
             $item = Item::find($validated['item_id']);
             $item->increment('quantity', $validated['quantity']); 
         });
@@ -117,21 +110,27 @@ class TransactionController extends Controller
             ->with('success', 'Stock-in recorded successfully.');
     }
 
+    // ============================================================
+    // UPDATED: store_bulk_out with Orange Warning Logic
+    // ============================================================
     public function store_bulk_out(Request $request)
     {
         $validated = $request->validate([
-            // 1. Match 'line_items' from your Vue form
             'line_items' => 'required|array|min:1',
             'line_items.*.item_id' => 'required|exists:items,id',
             'line_items.*.quantity' => 'required|numeric|min:0.1',
             'department' => 'required|string',
             'released_to' => 'required|string',
             'purpose' => 'nullable|string',
-            'date_released' => 'required|date', // Added validation for date
+            'date_released' => 'required|date', 
         ]);
 
-        DB::transaction(function () use ($validated) {
+        $lowStockItems = [];
+
+        DB::transaction(function () use ($validated, &$lowStockItems) {
             foreach ($validated['line_items'] as $itemData) {
+                $item = Item::findOrFail($itemData['item_id']);
+                
                 StockOut::create([
                     'item_id' => $itemData['item_id'],
                     'quantity' => $itemData['quantity'],
@@ -142,11 +141,25 @@ class TransactionController extends Controller
                     'released_by' => auth()->user()->name,
                 ]);
 
-                // 2. Corrected from 'stock' to 'quantity'
-                $item = Item::findOrFail($itemData['item_id']);
                 $item->decrement('quantity', $itemData['quantity']);
+                
+                // Logic for Warning
+                $item->refresh();
+                $finalQty = (int) $item->quantity;
+                $threshold = ($item->min_stock && $item->min_stock > 0) ? (int) $item->min_stock : 10;
+
+                if ($finalQty <= $threshold) {
+                    $lowStockItems[] = "{$item->name} ({$finalQty} left)";
+                }
             }
         });
+
+        // Kung may tinamaan na threshold, 'warning' (Orange) ang ise-send
+        if (count($lowStockItems) > 0) {
+            $names = implode(', ', $lowStockItems);
+            return redirect()->route('transactions.index')
+                ->with('warning', "Issuance successful, but low stock detected for: {$names}");
+        }
 
         return redirect()->route('transactions.index')
             ->with('success', 'Bulk issuance completed and stock levels updated.');
@@ -157,7 +170,6 @@ class TransactionController extends Controller
         $request->validate(['department' => 'required|string']);
         $department = $request->department;
 
-        // We fetch from StockOut, so we explicitly label each as 'Out'
         $transactions = StockOut::where('department', $department)
             ->with(['item.category'])
             ->get()
@@ -180,18 +192,17 @@ class TransactionController extends Controller
             $realId = str_replace('in-', '', $id);
             $transaction = StockIn::with('item')->findOrFail($realId);
             
-            $transaction->type = 'In'; // Manual nating nilalagyan ng type
+            $transaction->type = 'In'; 
             $pdf = Pdf::loadView('pdf.transaction', compact('transaction'))
             ->setPaper('letter', 'portrait');
             return $pdf->download('Stock-In-Report-' . $realId . '.pdf');
         }
 
-        // 2. Check kung Stock Out (may 'out-' sa unahan)
         if (str_starts_with($id, 'out-')) {
             $realId = str_replace('out-', '', $id);
             $transaction = StockOut::with('item')->findOrFail($realId);
             
-            $transaction->type = 'Out'; // Manual nating nilalagyan ng type
+            $transaction->type = 'Out'; 
             $pdf = Pdf::loadView('pdf.transaction', compact('transaction'))
             ->setPaper('letter', 'portrait');
             return $pdf->download('Stock-Out-Report-' . $realId . '.pdf');
