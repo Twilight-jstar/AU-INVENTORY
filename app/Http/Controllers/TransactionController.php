@@ -152,27 +152,41 @@ class TransactionController extends Controller
             ->with('success', 'Bulk issuance completed and stock levels updated.');
     }
 
-    public function exportByDepartment(Request $request)
-    {
-        $request->validate(['department' => 'required|string']);
-        $department = $request->department;
+public function exportByDepartment(Request $request)
+{
+    $request->validate(['department' => 'required|string']);
+    $department = $request->department;
 
-        // We fetch from StockOut, so we explicitly label each as 'Out'
-        $transactions = StockOut::where('department', $department)
-            ->with(['item.category'])
-            ->get()
-            ->map(function ($trx) {
-                $trx->type = 'Out'; 
-                return $trx;
-            });
+    $transactions = StockOut::where('department', $department)
+        ->with(['item.category', 'item.unit'])
+        ->get()
+        // Group by Category Name para magkadikit ang magkakauri
+        ->groupBy(function($trx) {
+            return $trx->item->category->name ?? 'UNCATEGORIZED';
+        })
+        ->sortKeys() // Ayusin ang Categories (A-Z)
+        ->map(function ($itemsInArchive) {
+            // Sa loob ng bawat category, i-group ang same items at i-sort by Product Code
+            return $itemsInArchive->groupBy('item_id')->map(function ($group) {
+                $first = $group->first();
+                return (object) [
+                    'product_code' => $first->item->product_code,
+                    'item' => $first->item,
+                    'total_quantity' => $group->sum('quantity'),
+                    'combined_remarks' => $group->map(function($trx) {
+                        return ($trx->released_to ?? 'N/A') . ($trx->purpose ? " ({$trx->purpose})" : "");
+                    })->unique()->implode(', ')
+                ];
+            })->sortBy('product_code');
+        })
+        ->flatten(1); // Gawing isang listahan na lang para sa Blade
 
-        $title = "Movement Registry Report: " . $department;
-        $type = 'Out';
+    $title = "STOCK ISSUANCE FORM";
 
-        return Pdf::loadView('pdf.bulk_transactions', compact('transactions', 'title', 'type', 'department'))
-            ->setPaper('a4', 'landscape')
-            ->stream("Registry-{$department}.pdf");
-    }
+    return Pdf::loadView('pdf.bulk_transactions', compact('transactions', 'title', 'department'))
+        ->setPaper('letter', 'portrait')
+        ->stream("Registry-{$department}.pdf");
+}
 
     public function exportPdf($id)
     {

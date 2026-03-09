@@ -54,7 +54,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Bulk Issuance" />
+    <Head title="For Release" />
     <AuthenticatedLayout>
         <div class="max-w-5xl mx-auto pb-10">
             <div class="flex items-center justify-between mb-8 pb-4 border-b border-slate-200">
@@ -63,7 +63,7 @@ const submit = () => {
                         <ArrowLeft class="w-5 h-5 text-slate-500" />
                     </Link>
                     <div>
-                        <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tight">Bulk Stock Out</h1>
+                        <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tight">Stock Out</h1>
                         <p class="text-[10px] text-purple-600 font-black uppercase tracking-widest">Inventory Control Unit</p>
                     </div>
                 </div>
