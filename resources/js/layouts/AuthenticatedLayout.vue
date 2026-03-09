@@ -56,11 +56,7 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
 
 <template>
     <div class="min-h-screen flex flex-col md:flex-row relative bg-slate-50">
-        <div 
-            class="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-20 pointer-events-none"
-            style="background-image: url('/images/bg.png');"
-        ></div>
-
+        
         <aside class="hidden md:flex flex-col w-64 bg-purple-900 sticky top-0 h-screen z-20 shadow-2xl border-r border-purple-800">
             <div class="p-8">
                 <div class="flex flex-col gap-2">
@@ -118,6 +114,11 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
         </aside>
 
         <main class="flex-1 relative z-10 flex flex-col h-screen overflow-hidden">
+            
+            <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-20 overflow-hidden">
+                <img src="/images/bg.png" alt="ALF Logo Watermark" class="w-[100%] md:w-[80%] h-auto object-contain">
+            </div>
+
             <header class="w-full bg-white/70 backdrop-blur-xl border-b border-slate-200 px-6 md:px-10 py-5">
                 <div class="max-w-7xl mx-auto flex items-center justify-between">
                     <div>
@@ -134,9 +135,12 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
 
             <div class="flex-1 overflow-y-auto p-6 md:p-10">
                 <div class="max-w-7xl mx-auto">
-                    <slot />
+                    <div class="relative z-10">
+                        <slot />
+                    </div>
                 </div>
             </div>
+
         </main>
     </div>
 </template>

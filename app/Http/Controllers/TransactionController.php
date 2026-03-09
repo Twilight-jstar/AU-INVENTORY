@@ -126,7 +126,8 @@ class TransactionController extends Controller
             $transaction = StockIn::with('item')->findOrFail($realId);
             
             $transaction->type = 'In'; // Manual nating nilalagyan ng type
-            $pdf = Pdf::loadView('pdf.transaction', compact('transaction'));
+            $pdf = Pdf::loadView('pdf.transaction', compact('transaction'))
+            ->setPaper('letter', 'portrait');
             return $pdf->download('Stock-In-Report-' . $realId . '.pdf');
         }
 
@@ -136,7 +137,8 @@ class TransactionController extends Controller
             $transaction = StockOut::with('item')->findOrFail($realId);
             
             $transaction->type = 'Out'; // Manual nating nilalagyan ng type
-            $pdf = Pdf::loadView('pdf.transaction', compact('transaction'));
+            $pdf = Pdf::loadView('pdf.transaction', compact('transaction'))
+            ->setPaper('letter', 'portrait');
             return $pdf->download('Stock-Out-Report-' . $realId . '.pdf');
         }
 
