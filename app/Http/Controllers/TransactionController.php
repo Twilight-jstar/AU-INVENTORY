@@ -177,14 +177,26 @@ class TransactionController extends Controller
     public function exportPdf($id)
     {
         if (str_starts_with($id, 'in-')) {
-            $transaction = StockIn::with('item')->findOrFail(str_replace('in-', '', $id));
-            $transaction->type = 'In';
-        } else {
-            $transaction = StockOut::with('item')->findOrFail(str_replace('out-', '', $id));
-            $transaction->type = 'Out';
+            $realId = str_replace('in-', '', $id);
+            $transaction = StockIn::with('item')->findOrFail($realId);
+            
+            $transaction->type = 'In'; // Manual nating nilalagyan ng type
+            $pdf = Pdf::loadView('pdf.transaction', compact('transaction'))
+            ->setPaper('letter', 'portrait');
+            return $pdf->download('Stock-In-Report-' . $realId . '.pdf');
         }
-        
-        return Pdf::loadView('pdf.transaction', compact('transaction'))
-            ->stream("Trx-{$id}.pdf");
+
+        // 2. Check kung Stock Out (may 'out-' sa unahan)
+        if (str_starts_with($id, 'out-')) {
+            $realId = str_replace('out-', '', $id);
+            $transaction = StockOut::with('item')->findOrFail($realId);
+            
+            $transaction->type = 'Out'; // Manual nating nilalagyan ng type
+            $pdf = Pdf::loadView('pdf.transaction', compact('transaction'))
+            ->setPaper('letter', 'portrait');
+            return $pdf->download('Stock-Out-Report-' . $realId . '.pdf');
+        }
+
+        abort(404, 'Transaction not found.');
     }
 }

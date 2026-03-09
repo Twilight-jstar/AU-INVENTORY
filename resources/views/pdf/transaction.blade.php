@@ -2,73 +2,105 @@
 <html>
 <head>
     <style>
-        body { font-family: 'Helvetica', sans-serif; font-size: 13px; color: #333; }
+        @page { size: letter portrait; margin: 30px; }
+        
+        body { font-family: 'Helvetica', sans-serif; font-size: 11px; color: #333; }
+        
         .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 25px; }
         .school-name { font-size: 20px; font-weight: bold; margin: 0; color: #000; }
         .address { font-size: 11px; margin: 2px 0; }
-        .report-title { text-align: center; font-size: 16px; font-weight: bold; text-decoration: underline; margin-bottom: 20px; }
-        .table { width: 100%; border-collapse: collapse; }
-        .table th, .table td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-        .label { background-color: #f9f9f9; font-weight: bold; width: 35%; }
-        .footer { margin-top: 40px; font-size: 10px; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+        .report-title { text-align: center; font-size: 13px; font-weight: bold; text-decoration: underline; margin-bottom: 20px; letter-spacing: 1px; }
+        
+        .info-table { width: 100%; margin-bottom: 10px; font-size: 11px; font-weight: bold; border-collapse: collapse;}
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
+        .items-table th, .items-table td { border: 1px solid #ccc; padding: 6px; text-align: center; word-wrap: break-word; }
+        .items-table th { background-color: #f9f9f9; font-weight: bold; }
+        .items-table td.desc { text-align: left; }
+        
+        .footer { margin-top: 20px; font-size: 10px; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+        .ref-no { position: absolute; top: -10px; right: 0; font-size: 9px; }
     </style>
 </head>
+
 <body>
-    <table style="width: 100%; border-bottom: 2px solid #000000; padding-bottom: 10px; margin-bottom: 25px;">
+    <div class="ref-no">
+        Order #{{ $transaction->type === 'In' ? 'IN' : 'OUT' }}-{{ str_pad($transaction->id, 5, '0', STR_PAD_LEFT) }} - Disbursement System
+    </div>
+
+    <table style="width: 100%; border-bottom: 2px solid #000000; padding-bottom: 5px; margin-bottom: 15px;">
         <tr>
-            <td style="width: 120px; border: none; vertical-align: middle; padding-left: 10px;">
-                <img src="{{ public_path('images/AUSL_logo.png') }}" style="width: 100px; height: 100px;">
+            <td style="width: 100px; border: none; vertical-align: middle; padding-left: 10px;">
+                <img src="{{ public_path('images/AUSL_logo.png') }}" style="width: 70px; height: 70px;">
             </td>
             <td style="border: none; vertical-align: middle; text-align: center;">
-                <p style="font-size: 25px; font-weight: bold; margin: 0; color: #551359;">ARELLANO LAW FOUNDATION</p>
-                <p style="font-size: 14px; margin: 2px 0;">Taft Avenue Corner Menlo Street, Pasay City, Metro Manila, Philippines.</p>
-                <p style="font-size: 14px; margin: 0; font-weight: bold;">Inventory Management System</p>
+                <p style="font-size: 18px; font-weight: bold; margin: 0; color: #551359;">ARELLANO LAW FOUNDATION</p>
+                <p style="font-size: 11px; margin: 2px 0;">Taft Avenue Corner Menlo Street, Pasay City, Metro Manila</p>
+                <p style="font-size: 11px; margin: 0; font-weight: bold;">Tel.No.404-3089 to 93</p>
             </td>
-            <td style="width: 120px; border: none;"></td>
+            <td style="width: 100px; border: none;"></td>
         </tr>
     </table>
 
     <div class="report-title">
-        {{ $transaction->type === 'In' ? 'STOCK-IN REPORT' : 'STOCK-OUT REPORT' }}
+        {{ $transaction->type === 'In' ? 'STOCK-IN REPORT' : 'STOCK ISSUANCE FORM' }}
     </div>
 
-    <table class="table">
-        <tr><td class="label">Reference No:</td><td>#{{ $transaction->type === 'In' ? 'IN' : 'OUT' }}-{{ str_pad($transaction->id, 5, '0', STR_PAD_LEFT) }}</td></tr>
-
-        @if($transaction->type === 'In')
-            <tr><td class="label">Date Received:</td><td>{{ \Carbon\Carbon::parse($transaction->date_received ?? $transaction->created_at)->format('F d, Y') }}</td></tr>
-            <tr><td class="label">Supplier:</td><td>{{ $transaction->supplier->name ?? $transaction->supplier_id ?? 'N/A' }}</td></tr>
-            <tr><td class="label">Product Code:</td><td>{{ $transaction->item->product_code ?? 'N/A' }}</td></tr>
-            <tr><td class="label">Item Description:</td><td><strong>{{ $transaction->item->item_name ?? $transaction->item->name ?? 'N/A' }}</strong></td></tr>
-            <tr><td class="label">Quantity:</td><td>{{ $transaction->quantity }} units</td></tr>
-            <tr><td class="label">Unit Cost:</td><td> {{ number_format($transaction->unit_cost ?? 0, 2) }}</td></tr>
-            <tr><td class="label">Received By:</td><td>{{ $transaction->received_by ?? 'N/A' }}</td></tr>
-        @else
-            <tr><td class="label">Date Released:</td><td>{{ \Carbon\Carbon::parse($transaction->date_released ?? $transaction->created_at)->format('F d, Y') }}</td></tr>
-            <tr><td class="label">Product Code:</td><td>{{ $transaction->item->product_code ?? 'N/A' }}</td></tr>
-            <tr><td class="label">Item Description:</td><td><strong>{{ $transaction->item->name ?? 'N/A' }}</strong></td></tr>
-            <tr><td class="label">Quantity:</td><td>{{ $transaction->quantity }} units</td></tr>
-            <tr><td class="label">Released To:</td><td>{{ $transaction->released_to ?? 'N/A' }}</td></tr>
-            <tr><td class="label">Department:</td><td>{{ $transaction->department ?? 'N/A' }}</td></tr>
-            <tr><td class="label">Purpose:</td><td>{{ $transaction->purpose ?? 'N/A' }}</td></tr>
-            <tr><td class="label">Released By:</td><td>{{ $transaction->released_by ?? 'N/A' }}</td></tr>
-        @endif
-
-        <tr><td class="label">Notes:</td><td>{{ $transaction->note ?? 'No additional details.' }}</td></tr>
+    <table class="info-table">
+        <tr>
+            <td style="text-align: left;">
+                @if($transaction->type === 'In')
+                    Supplier: {{ $transaction->supplier->name ?? $transaction->supplier_id ?? 'N/A' }}
+                @else
+                    Issued To: {{ $transaction->department ?? $transaction->released_to }}
+                @endif
+            </td>
+            <td style="text-align: right;">
+                Date: {{ \Carbon\Carbon::parse($transaction->created_at)->format('M d, Y') }}
+            </td>
+        </tr>
     </table>
 
-    <div style="margin-top: 40px; font-size: 13px;">
-        @if($transaction->type === 'In')
-            <strong>SIGNATURE:</strong> __________________________________________
-        @else
-            <div style="margin-bottom: 25px;">
-                <strong>RELEASED BY (Signature):</strong> ________________________________
-            </div>
-            <div>
-                <strong>RECEIVED BY (Signature):</strong> ________________________________
-            </div>
-        @endif
-    </div>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="5%">#</th>
+                <th width="20%">Product Code</th>
+                <th width="10%">Qty</th>
+                <th width="10%">Unit</th>
+                <th width="25%">Item Description</th>
+                <th width="30%">Remarks</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td style="font-weight: bold;">{{ $transaction->item->product_code ?? 'N/A' }}</td>
+                <td>{{ $transaction->quantity }}</td>
+                <td>PCS</td>
+                <td class="desc">{{ $transaction->item->name ?? 'N/A' }}</td>
+                <td>{{ $transaction->purpose ?? $transaction->note ?? 'N/A' }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table style="width: 100%; margin-top: 30px; font-size: 11px; font-weight: bold;">
+        <tr>
+            @if($transaction->type === 'In')
+                {{-- STOCK IN: Received By Lang --}}
+                <td style="text-align: left; width: 100%;">
+                    Received By : <span style="text-decoration: underline;">{{ $transaction->received_by ?? 'Property Custodian' }}</span>
+                </td>
+            @else
+                {{-- STOCK OUT: Prepared at Received --}}
+                <td style="text-align: left; width: 50%;">
+                    Prepared By : <span style="text-decoration: underline;">{{ $transaction->released_by ?? 'Property Custodian' }}</span>
+                </td>
+                <td style="text-align: right; width: 50%;">
+                    Received By : _______________________
+                </td>
+            @endif
+        </tr>
+    </table>
 
     <div class="footer">
         Generated on: {{ date('Y-m-d H:i:s') }} | Official AU System Record
