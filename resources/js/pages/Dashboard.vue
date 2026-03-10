@@ -6,8 +6,8 @@ import { computed } from 'vue';
 import { Bar } from 'vue-chartjs';
 import { 
     FileText, 
-    AlertCircle, 
-    History, 
+    CircleAlert, // PINALITAN: Mula AlertCircle papuntang CircleAlert para iwas error
+    History as HistoryIcon, // Pinalitan ng HistoryIcon para iwas conflict sa browser history
     Box, 
     LayoutGrid,
     TrendingUp
@@ -21,7 +21,8 @@ import {
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
 const page = usePage();
-const userName = computed(() => page.props.auth.user.name);
+// BAGO: Nilagyan ng '?.' para hindi mag-crash kapag biglang na-expire ang session
+const userName = computed(() => page.props.auth.user?.name || 'Administrator');
 
 const props = defineProps({
     stats: Object,
@@ -35,12 +36,12 @@ const props = defineProps({
 
 const chartData = computed(() => {
     return {
-        labels: props.top_stock_items.map(item => item.name), 
+        labels: props.top_stock_items?.map(item => item.name) || [], 
         datasets: [{
             label: 'Current Stock',
             backgroundColor: '#581c87', // Deeper purple for a grounded feel
             borderRadius: 2,
-            data: props.top_stock_items.map(item => item.quantity) 
+            data: props.top_stock_items?.map(item => item.quantity) || [] 
         }]
     }
 });
@@ -91,15 +92,15 @@ const chartOptions = {
                         <div class="p-2 bg-slate-50 rounded-sm text-slate-600"><Box class="w-4 h-4" /></div>
                         <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Items</h3>
                     </div>
-                    <p class="text-2xl font-bold text-slate-900">{{ stats.total_items }}</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ stats?.total_items || 0 }}</p>
                 </Card>
 
                 <Card class="p-5 border-none shadow-none ring-1 ring-slate-200">
                     <div class="flex items-center gap-3 mb-3">
-                        <div class="p-2 bg-amber-50 rounded-sm text-amber-600"><AlertCircle class="w-4 h-4" /></div>
+                        <div class="p-2 bg-amber-50 rounded-sm text-amber-600"><CircleAlert class="w-4 h-4" /></div>
                         <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Low Stock</h3>
                     </div>
-                    <p class="text-2xl font-bold text-amber-600">{{ stats.low_stock_count }}</p>
+                    <p class="text-2xl font-bold text-amber-600">{{ stats?.low_stock_count || 0 }}</p>
                 </Card>
 
                 <Card class="p-5 border-none shadow-none ring-1 ring-slate-200">
@@ -107,15 +108,15 @@ const chartOptions = {
                         <div class="p-2 bg-slate-50 rounded-sm text-slate-600"><LayoutGrid class="w-4 h-4" /></div>
                         <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Categories</h3>
                     </div>
-                    <p class="text-2xl font-bold text-slate-900">{{ stats.total_categories }}</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ stats?.total_categories || 0 }}</p>
                 </Card>
 
                 <Card class="p-5 border-none shadow-none ring-1 ring-slate-200">
                     <div class="flex items-center gap-3 mb-3">
-                        <div class="p-2 bg-slate-50 rounded-sm text-slate-600"><History class="w-4 h-4" /></div>
+                        <div class="p-2 bg-slate-50 rounded-sm text-slate-600"><HistoryIcon class="w-4 h-4" /></div>
                         <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Updates Today</h3>
                     </div>
-                    <p class="text-2xl font-bold text-slate-900">{{ stats.recent_updates }}</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ stats?.recent_updates || 0 }}</p>
                 </Card>
             </div>
 
@@ -169,7 +170,7 @@ const chartOptions = {
                             class="px-6 py-4 flex justify-between items-center border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
                             <div class="flex items-center gap-4">
                                 <div :class="trx.type === 'In' ? 'text-emerald-500' : 'text-slate-300'" class="p-1">
-                                    <History class="w-4 h-4" />
+                                    <HistoryIcon class="w-4 h-4" />
                                 </div>
                                 <div>
                                     <p class="text-sm font-bold text-slate-800 uppercase tracking-tight">{{ trx.item?.name }}</p>

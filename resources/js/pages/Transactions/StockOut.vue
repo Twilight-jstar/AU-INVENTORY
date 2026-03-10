@@ -3,7 +3,11 @@ import { useForm, Head, Link, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue';
 import Card from '@/components/ui/card/Card.vue';
-import { ArrowLeft, Plus, Trash2, Building2, Download, Save, RefreshCw, AlertCircle } from 'lucide-vue-next';
+import { 
+    ArrowLeft, Save, Loader2, AlertCircle, Plus, Trash2, 
+    Hash, Building2, UserCircle, FileText, Calendar, 
+    AlertTriangle // BAGO: In-import natin ito para sa warning icon
+} from 'lucide-vue-next';
 
 const props = defineProps({ 
     items: Array, 
@@ -17,7 +21,8 @@ const submittedRef = ref('');
 const form = useForm({
     department: '',
     released_to: '',
-    // REMOVED: released_by (handled by Controller data capture)
+    released_by: page.props.auth.user?.name || 'Authorized Personnel', 
+    department: '',
     purpose: '',
     date_released: new Date().toISOString().substr(0, 10),
     line_items: [{ item_id: '', quantity: 1 }]
@@ -126,6 +131,16 @@ const submit = () => {
                                             {{ item.name }} (Current: {{ item.quantity }})
                                         </option>
                                     </select>
+                                    
+                                    <div v-if="line.item_id" class="mt-1 ml-1 space-y-1">
+                                        <p v-if="props.items.find(i => i.id === line.item_id && line.quantity > i.quantity)" class="text-[9px] text-red-500 font-bold uppercase flex items-center gap-1">
+                                            <AlertCircle class="w-3 h-3" /> Exceeds available stock!
+                                        </p>
+                                        <p v-else-if="props.items.find(i => i.id === line.item_id && (i.quantity - line.quantity) <= i.min_stock)" class="text-[9px] text-amber-500 font-bold uppercase flex items-center gap-1">
+                                            <AlertTriangle class="w-3 h-3" /> Will drop below minimum stock
+                                        </p>
+                                    </div>
+
                                 </td>
                                 <td class="px-4 py-3 border-l border-slate-50 text-center">
                                     <input v-model="line.quantity" type="number" step="0.1" min="0.1" class="w-full border-none text-center h-9 ring-1 ring-slate-100 rounded-sm focus:ring-slate-900" required :disabled="recentlySubmitted" />

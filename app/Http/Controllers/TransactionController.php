@@ -7,6 +7,7 @@ use App\Models\StockIn;
 use App\Models\StockOut;
 use App\Models\Department;
 use App\Models\Category;
+use App\Models\Supplier; 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
@@ -54,7 +55,10 @@ class TransactionController extends Controller
             ->sort(function ($a, $b) {
                 $dateCompare = $b['created_at'] <=> $a['created_at'];
                 if ($dateCompare !== 0) return $dateCompare;
-                return $b['raw_id'] <=> $a['raw_id'];
+
+                $idA = (int) filter_var($a['id'], FILTER_SANITIZE_NUMBER_INT);
+                $idB = (int) filter_var($b['id'], FILTER_SANITIZE_NUMBER_INT);
+                return $idB <=> $idA;
             })
             ->values();
 
@@ -82,8 +86,11 @@ class TransactionController extends Controller
 
     public function store_bulk_in(Request $request)
     {
-        $request->validate([
-            'supplier_name' => 'required|string',
+        $validated = $request->validate([
+            'item_id' => 'required|exists:items,id',
+            'quantity' => 'required|numeric|min:0.1',
+            'received_by' => 'required|string|max:255',
+            'supplier_id' => 'required|string|max:255', 
             'date_received' => 'required|date',
             'line_items' => 'required|array|min:1',
             'line_items.*.item_id' => 'required|exists:items,id',
@@ -111,6 +118,9 @@ class TransactionController extends Controller
         return back()->with('success', 'Stock In recorded.');
     }
 
+    // ============================================================
+    // UPDATED: store_bulk_out with Orange Warning Logic
+    // ============================================================
     public function store_bulk_out(Request $request)
     {
         $request->validate([
