@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'; 
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'; 
 import { Link, usePage } from '@inertiajs/vue3'; 
 import { 
     Package, 
@@ -12,45 +12,99 @@ import {
     X,
     User,
     ChevronUp,
-    ShieldAlert
+    ShieldAlert,
+    CircleCheck,
+    CircleAlert,
+    TriangleAlert
 } from 'lucide-vue-next';
 import { route } from 'ziggy-js';
+
+// 1. Define Types to fix the TypeScript "Property does not exist on type '{}'" errors
+interface FlashProps {
+    success?: string;
+    error?: string;
+    warning?: string;
+}
 
 const isMobileMenuOpen = ref(false);
 const showUserMenu = ref(false); 
 const page = usePage();
 
-const userName = computed(() => page.props.auth.user.name);
-const userRole = computed(() => page.props.auth.user.role);
+// Access shared props safely with type casting
+const flash = computed(() => page.props.flash as FlashProps);
+const userName = computed(() => page.props.auth.user?.name || 'Guest User');
+const userRole = computed(() => page.props.auth.user?.role || 'Viewer');
 
+// ============================================================
+// NOTIFICATION LOGIC (Success, Error, and Low Stock Warning)
+// ============================================================
+const showNotification = ref(false);
+
+watch(() => page.props.flash as FlashProps, (newFlash) => {
+    const hasFlash = newFlash && (newFlash.success || newFlash.error || newFlash.warning);
+
+    if (hasFlash) {
+        showNotification.value = false; // Reset first
+        setTimeout(() => {
+            showNotification.value = true;
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                showNotification.value = false;
+            }, 5000);
+        }, 100);
+    }
+}, { deep: true, immediate: true });
+
+// ============================================================
+// NAVIGATION & ZIGGY SAFETY (Prevents White Screen Crash)
+// ============================================================
 const navigationGroups = [
     {
         label: 'Analytics',
         items: [
-            { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: 'dashboard', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
+            { name: 'Dashboard', routeName: 'dashboard', icon: LayoutDashboard, active: 'dashboard', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
         ]
     },
     {
         label: 'Inventory Control',
         items: [
-            { name: 'Inventory Items', href: route('items.index'), icon: Package, active: 'items.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
-            { name: 'Asset Categories', href: route('categories.index'), icon: Tags, active: 'categories.*', roles: ['Admin', 'Clerk', 'Custodian'] },
-            { name: 'Measurement Units', href: route('units.index'), icon: Scale, active: 'units.*', roles: ['Admin', 'Clerk', 'Custodian'] },
+            { name: 'Inventory Items', routeName: 'items.index', icon: Package, active: 'items.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
+            { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['Admin', 'Clerk', 'Custodian'] },
+            { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['Admin', 'Clerk', 'Custodian'] },
         ]
     },
     {
         label: 'System Access',
         items: [
-            { name: 'Manage Users', href: route('users.index'), icon: User, active: 'users.*', roles: ['Admin'] },
+            // Only 'Admin' can see this group
+            { name: 'Manage Users', routeName: 'users.index', icon: User, active: 'users.*', roles: ['Admin'] },
         ]
     },
     {
         label: 'Activity Logs',
         items: [
-            { name: 'Stock In / Stock Out', href: route('transactions.index'), icon: HistoryIcon, active: 'transactions.*', roles: ['Clerk', 'Custodian', 'Viewer'] },
+            { name: 'Stock In / Stock Out', routeName: 'transactions.index', icon: HistoryIcon, active: 'transactions.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
         ]
     }
 ];
+
+// Helper to prevent Ziggy crash if a route is not authorized/defined
+const safeRoute = (name: string) => {
+    try {
+        // Only attempt to resolve if Ziggy knows the route
+        return route().has(name) ? route(name) : '#';
+    } catch (e) {
+        return '#'; 
+    }
+};
+
+const isRouteActive = (activePattern: string) => {
+    try {
+        return route().current(activePattern);
+    } catch (e) {
+        return false;
+    }
+};
 
 const filteredGroups = computed(() => {
     return navigationGroups.map(group => ({
@@ -62,7 +116,7 @@ const filteredGroups = computed(() => {
 const pageTitle = computed(() => {
     if (page.props.title) return page.props.title;
     for (const group of navigationGroups) {
-        const activeNav = group.items.find(item => route().current(item.active as string));
+        const activeNav = group.items.find(item => isRouteActive(item.active));
         if (activeNav) return activeNav.name;
     }
     return 'Inventory Management';
@@ -82,6 +136,29 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
 <template>
     <div class="min-h-screen flex flex-col md:flex-row relative bg-slate-50">
         
+        <Transition name="fade-slide">
+            <div v-if="showNotification" class="fixed top-6 right-6 z-[9999] max-w-md w-full flex flex-col gap-2 pointer-events-none">
+                
+                <div v-if="flash.success" class="pointer-events-auto bg-emerald-500 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3 border border-emerald-400">
+                    <CircleCheck class="w-5 h-5 text-white shrink-0 mt-0.5" />
+                    <div class="flex-1 text-sm font-bold">{{ flash.success }}</div>
+                    <button @click="showNotification = false" class="text-white/80 hover:text-white shrink-0"><X class="w-4 h-4" /></button>
+                </div>
+
+                <div v-if="flash.error" class="pointer-events-auto bg-rose-500 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3 border border-rose-400">
+                    <CircleAlert class="w-5 h-5 text-white shrink-0 mt-0.5" />
+                    <div class="flex-1 text-sm font-bold">{{ flash.error }}</div>
+                    <button @click="showNotification = false" class="text-white/80 hover:text-white shrink-0"><X class="w-4 h-4" /></button>
+                </div>
+
+                <div v-if="flash.warning" class="pointer-events-auto bg-amber-500 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3 border border-amber-400">
+                    <TriangleAlert class="w-5 h-5 text-white shrink-0 mt-0.5" />
+                    <div class="flex-1 text-sm font-bold">{{ flash.warning }}</div>
+                    <button @click="showNotification = false" class="text-white/80 hover:text-white shrink-0"><X class="w-4 h-4" /></button>
+                </div>
+            </div>
+        </Transition>
+
         <aside class="hidden md:flex flex-col w-64 bg-purple-900 sticky top-0 h-screen z-20 shadow-2xl border-r border-purple-800">
             <div class="p-6">
                 <div class="flex flex-col gap-1">
@@ -105,9 +182,9 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
                         <Link 
                             v-for="item in group.items" 
                             :key="item.name"
-                            :href="item.href"
+                            :href="safeRoute(item.routeName)"
                             class="flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 group"
-                            :class="route().current(item.active) 
+                            :class="isRouteActive(item.active) 
                                 ? 'bg-white/15 text-white shadow-inner border border-white/10' 
                                 : 'text-purple-100/70 hover:bg-white/5 hover:text-white'"
                         >
@@ -158,8 +235,8 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
 
         <main class="flex-1 relative z-10 flex flex-col h-screen overflow-hidden">
             
-            <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-20 overflow-hidden">
-                <img src="/images/bg.png" alt="ALF Logo Watermark" class="w-[100%] md:w-[80%] h-auto object-contain">
+            <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-10 overflow-hidden">
+                <img src="/images/bg.png" alt="ALF Watermark" class="w-[100%] md:w-[80%] h-auto object-contain">
             </div>
 
             <header class="w-full bg-white/70 backdrop-blur-xl border-b border-slate-200 px-6 md:px-10 py-5">
@@ -183,29 +260,18 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
                     </div>
                 </div>
             </div>
-
         </main>
     </div>
 </template>
 
 <style scoped>
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
-}
-.no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-.pop-enter-active {
-    transition: all 0.3s ease-out;
-}
-.pop-leave-active {
-    transition: all 0.2s ease-in;
-}
-.pop-enter-from,
-.pop-leave-to {
-    opacity: 0;
-    transform: translateY(10px) scale(0.95);
-}
+.pop-enter-active { transition: all 0.3s ease-out; }
+.pop-leave-active { transition: all 0.2s ease-in; }
+.pop-enter-from, .pop-leave-to { opacity: 0; transform: translateY(10px) scale(0.95); }
+
+.fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+.fade-slide-enter-from, .fade-slide-leave-to { opacity: 0; transform: translateY(-20px) translateX(20px); }
 </style>

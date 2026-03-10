@@ -11,15 +11,13 @@ class StockIn extends Model
 
     protected $fillable = [
         'item_id', 
-        'user_id', 
-        'ref_no', 
         'quantity', 
-        'unit_cost', 
-        'date_received', 
         'supplier_name', 
-        'received_by'
+        'date_received', 
+        'received_by', 
+        'ref_no', 
+        'unit_cost'
     ];
-
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);

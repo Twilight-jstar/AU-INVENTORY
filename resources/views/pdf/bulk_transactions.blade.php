@@ -194,10 +194,17 @@
                     <span style="font-weight: bold; text-transform: uppercase; font-size: 10px;">
                         {{ $received_by_name ?? '__________________________' }}
                     </span>
+                    <span style="font-size: 9px; font-weight: normal;">
+                        @isset($received_by_date)
+                            {{ \Carbon\Carbon::parse($received_by_date)->format('m/d/Y') }}
+                        @else
+                            DATE: _________
+                        @endisset
+                    </span>
                 </div>
                 
                 <div class="sig-subtext" style="margin-top: 5px; font-size: 8px;">
-                    Signature Over Printed Name / Date
+                    Signature Over Printed Name and Date
                 </div>
             </td>
         </tr>

@@ -8,31 +8,35 @@ use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /**
+     * Bootstrap any application services.
+     */
     public function boot(): void
     {
-        // 1. Admin: Full Access (Superuser)
+        // 1. Superuser: Admin
+        // Using strtolower makes this "Admin" vs "admin" proof.
         Gate::before(function (User $user) {
-            if ($user->role === 'Admin') {
+            if (strtolower($user->role) === 'admin') {
                 return true;
             }
         });
 
-        // 2. Manage Inventory (Create/Edit)
-        // Allowed: Admin, Clerk, Custodian
+        // 2. Manage Inventory (Create, Edit, Delete, Stock In/Out)
         Gate::define('manage-inventory', function (User $user) {
-            return in_array($user->role, ['Clerk', 'Custodian']);
+            $role = strtolower($user->role);
+            return in_array($role, ['clerk', 'custodian']);
         });
 
-        // 3. Delete Authority
-        // Allowed: Admin, Custodian
-        Gate::define('delete-inventory', function (User $user) {
-            return $user->role === 'Custodian';
+        // 3. User Management
+        // If the user isn't an Admin (caught by before), they are denied.
+        Gate::define('manage-users', function (User $user) {
+            return false; 
         });
 
-        // 4. View Only
-        // Allowed: Everyone
+        // 4. View Only Access
         Gate::define('view-inventory', function (User $user) {
-            return in_array($user->role, ['Admin', 'Clerk', 'Custodian', 'Viewer']);
+            $role = strtolower($user->role);
+            return in_array($role, ['clerk', 'custodian', 'viewer']);
         });
     }
 }
