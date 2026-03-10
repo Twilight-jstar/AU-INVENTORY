@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UnitController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\DashboardController; 
 use App\Http\Controllers\ReportController;
@@ -64,6 +65,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('can:delete-inventory')->group(function () {
         Route::delete('items/{item}', [ItemController::class, 'destroy'])->name('items.destroy');
         Route::get('inventory/download-report', [ReportController::class, 'download'])->name('reports.download');
+        Route::get('users', [UserController::class, 'index'])->name('users.index');
     });
 });
 
