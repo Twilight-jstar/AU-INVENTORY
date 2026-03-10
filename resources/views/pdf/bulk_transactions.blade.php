@@ -131,7 +131,7 @@
                 <tr>
                     <td width="50%">REF: <span style="color: #551359;">#{{ $refNo }}</span></td>
                     <td width="50%" style="text-align: right; color: #551359;">
-                        {{ \Carbon\Carbon::parse($items->first()->date)->format('F d, Y') }}
+                        {{ \Carbon\Carbon::parse($items->first()->date)->format('F Y') }}
                     </td>
                 </tr>
             </table>
@@ -171,39 +171,38 @@
 
     <table class="footer-section">
         <tr>
-            <td class="sig-box">
+            <td class="sig-box" style="vertical-align: bottom;">
                 <div class="sig-subtext" style="margin-bottom: 25px;">Prepared By:</div>
                 
-                <div style="border-bottom: 1.5px solid #000; padding-bottom: 2px;">
+                <div style="border-bottom: 1.5px solid #000; padding-bottom: 2px; height: 18px; text-align: center;">
                     <span style="font-weight: bold; text-transform: uppercase; font-size: 10px;">
                         {{ auth()->user()->name ?? 'INVENTORY CUSTODIAN' }}
                     </span>
                 </div>
                 
-                <div class="sig-subtext" style="margin-top: 5px; font-size: 8px;">
+                <div class="sig-subtext" style="margin-top: 5px; font-size: 8px; text-align: center;">
                     Property Office Representative
                 </div>
             </td>
 
             <td style="width: 10%;"></td>
 
-            <td class="sig-box">
+            <td class="sig-box" style="vertical-align: bottom;">
                 <div class="sig-subtext" style="margin-bottom: 25px;">Received By:</div>
                 
-                <div style="border-bottom: 1.5px solid #000; padding-bottom: 2px;">
+                <div style="border-bottom: 1.5px solid #000; padding-bottom: 2px; height: 18px; text-align: center;">
                     <span style="font-weight: bold; text-transform: uppercase; font-size: 10px;">
-                        {{ $received_by_name ?? '__________________________' }}
+                        {!! $received_by_name ?? '&nbsp;' !!}
                     </span>
-                    <span style="font-size: 9px; font-weight: normal;">
-                        @isset($received_by_date)
+                    @if(isset($received_by_date))
+                        <span style="font-weight: bold; font-size: 10px; margin: 0 4px;">/</span>
+                        <span style="font-weight: bold; font-size: 10px;">
                             {{ \Carbon\Carbon::parse($received_by_date)->format('m/d/Y') }}
-                        @else
-                            DATE: _________
-                        @endisset
-                    </span>
+                        </span>
+                    @endif
                 </div>
                 
-                <div class="sig-subtext" style="margin-top: 5px; font-size: 8px;">
+                <div class="sig-subtext" style="margin-top: 5px; font-size: 8px; text-align: center;">
                     Signature Over Printed Name and Date
                 </div>
             </td>

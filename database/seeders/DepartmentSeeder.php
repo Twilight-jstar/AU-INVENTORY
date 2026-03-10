@@ -28,6 +28,7 @@ class DepartmentSeeder extends Seeder
             'HR/Records Section',
             'Information Technology Center',
             'Institute of Special Studies',
+            "LawPhil",
             'Office of the Legal Aid',
             'Office of the General Services',
             'Office of the Student Affairs',
