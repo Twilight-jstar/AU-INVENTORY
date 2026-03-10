@@ -70,9 +70,15 @@ const navigationGroups = [
         ]
     },
     {
+        label: 'System Access',
+        items: [
+            { name: 'Manage Users', href: route('users.index'), icon: User, active: 'users.*', roles: ['Admin'] },
+        ]
+    },
+    {
         label: 'Activity Logs',
         items: [
-            { name: 'Stock In / Stock Out', href: route('transactions.index'), icon: HistoryIcon, active: 'transactions.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
+            { name: 'Stock In / Stock Out', href: route('transactions.index'), icon: HistoryIcon, active: 'transactions.*', roles: ['Clerk', 'Custodian', 'Viewer'] },
         ]
     }
 ];

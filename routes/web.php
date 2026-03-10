@@ -14,16 +14,15 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     
-    // 1. PUBLIC & SHARED ACCESS
+    // 1. PUBLIC & SHARED ACCESS (View Only)
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('items', [ItemController::class, 'index'])->name('items.index');
     Route::get('transactions', [TransactionController::class, 'index'])->name('transactions.index');
     Route::get('items/{item}', [ItemController::class, 'show'])->name('items.show');
 
-    // 2. EXPORT SYSTEM (PINALITAN NG HYPHEN '-' PARA MAG-MATCH SA FRONTEND)
+    // 2. EXPORT SYSTEM (Hyphenated URLs for Frontend Compatibility)
     Route::controller(TransactionController::class)->group(function () {
         Route::prefix('transactions/export')->group(function () {
-            // Pinalitan ang '_' ng '-' para hindi mag-error ang Ziggy sa console
             Route::get('/daily-in', 'exportDailyIn')->name('transactions.export-daily-in');
             Route::get('/department', 'exportByDepartment')->name('transactions.export-by-department');
             Route::get('/selected/items', 'exportSelected')->name('transactions.export-selected');
@@ -32,7 +31,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     });
 
-    // 3. INVENTORY MANAGEMENT (Restricted to authorized users only)
+    // 3. INVENTORY MANAGEMENT (Restricted: manage-inventory)
     Route::middleware('can:manage-inventory')->group(function () {
 
         // Item Management
@@ -42,15 +41,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('items/{item}/edit', [ItemController::class, 'edit'])->name('items.edit');
         Route::put('items/{item}', [ItemController::class, 'update'])->name('items.update');
 
-        // Helpers
+        // Helpers (Categories & Units)
         Route::resource('categories', CategoryController::class);
         Route::resource('units', UnitController::class);
         
-        // Transaction Entries
+        // Transaction Entries (Bulk Operations)
         Route::controller(TransactionController::class)->group(function () {
             // Stock In
             Route::get('transactions/stock-in', 'stockIn')->name('transactions.stock-in');
-            // Pinanatiling underscore ang 'store_bulk_in' dahil kadalasan ito ay nasa form @submit, hindi sa direct URL export
             Route::post('transactions/stock-in/bulk', 'store_bulk_in')->name('transactions.store_bulk_in');
             
             // Stock Out
@@ -58,11 +56,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('transactions/stock-out/bulk', 'store_bulk_out')->name('transactions.store_bulk_out');
         });
 
-        // Remaining resource methods
+        // Remaining resource methods (Update/Edit for individual transactions)
         Route::resource('transactions', TransactionController::class)->except(['index', 'show', 'destroy', 'store']);
     });
 
-    // 4. ADMIN / DELETION PERMISSIONS
+    // 4. ADMIN / DELETION PERMISSIONS (Restricted: delete-inventory)
     Route::middleware('can:delete-inventory')->group(function () {
         Route::delete('items/{item}', [ItemController::class, 'destroy'])->name('items.destroy');
         Route::get('inventory/download-report', [ReportController::class, 'download'])->name('reports.download');
