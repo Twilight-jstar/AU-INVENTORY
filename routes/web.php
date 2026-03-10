@@ -68,7 +68,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 3. USER MANAGEMENT (Admin Only)
     // ==========================================
     Route::middleware('can:manage-users')->group(function () {
-        Route::get('users', [UserController::class, 'index'])->name('users.index');
+        Route::resource('users', UserController::class);
     });
 });
 

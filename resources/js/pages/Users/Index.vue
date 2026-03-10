@@ -20,18 +20,18 @@ const form = useForm({
     password: '', 
 });
 
-
 const openAddModal = () => {
     isEditing.value = false;
     editingId.value = null;
     form.reset();
+    form.clearErrors(); // Linisin ang lumang errors
     isModalOpen.value = true;
 };
-
 
 const openEditModal = (user) => {
     isEditing.value = true;
     editingId.value = user.id;
+    form.clearErrors();
     
     form.name = user.name;
     form.username = user.username;
@@ -142,7 +142,13 @@ const deleteUser = (id) => {
                     </button>
                 </div>
 
-                <form @submit.prevent="submit" class="p-6 space-y-4">
+                <form @submit.prevent="submit" class="p-6 space-y-4" novalidate>
+                    <div v-if="Object.keys(form.errors).length > 0" class="p-3 bg-red-50 border border-red-200 rounded-xl">
+                        <ul class="list-disc list-inside text-xs text-red-600">
+                            <li v-for="(error, key) in form.errors" :key="key">{{ error }}</li>
+                        </ul>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-black uppercase text-slate-500 mb-1 ml-1">Full Name</label>
                         <input v-model="form.name" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none text-sm" placeholder="Juan Dela Cruz" required>
@@ -171,7 +177,7 @@ const deleteUser = (id) => {
 
                     <div>
                         <label class="block text-xs font-black uppercase text-slate-500 mb-1 ml-1">
-                            {{ isEditing ? 'New Password (Leave blank to keep current)' : 'Initial Password' }}
+                            {{ isEditing ? 'New Password (Optional)' : 'Initial Password' }}
                         </label>
                         <input v-model="form.password" type="password" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none text-sm" placeholder="••••••••" :required="!isEditing">
                     </div>
@@ -180,7 +186,8 @@ const deleteUser = (id) => {
                         <button type="button" @click="isModalOpen = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
                             CANCEL
                         </button>
-                        <button type="submit" :disabled="form.processing" class="flex-1 px-4 py-2.5 rounded-xl bg-purple-600 text-sm font-bold text-white hover:bg-purple-700 shadow-lg shadow-purple-200 transition-all disabled:opacity-50">
+                        <button type="submit" 
+                        class="flex-1 px-4 py-2.5 rounded-xl bg-purple-600 text-sm font-bold text-white hover:bg-purple-700 shadow-lg shadow-purple-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                             {{ form.processing ? 'SAVING...' : (isEditing ? 'UPDATE USER' : 'SAVE USER') }}
                         </button>
                     </div>
