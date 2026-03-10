@@ -132,14 +132,17 @@ class TransactionController extends Controller
             'line_items.*.quantity' => 'required|numeric|min:0.1',
         ]);
 
-        DB::transaction(function () use ($request) {
+        $lowStockItems = [];
+
+        DB::transaction(function () use ($request, &$lowStockItems) {
             $refNo = $request->date_released;
             $capturedName = Auth::user()->name;
 
-            foreach ($request->line_items as $item) {
+            foreach ($request->line_items as $itemData) {
+                // 1. Record the Stock Out
                 StockOut::create([
-                    'item_id' => $item['item_id'],
-                    'quantity' => $item['quantity'],
+                    'item_id' => $itemData['item_id'],
+                    'quantity' => $itemData['quantity'],
                     'department' => $request->department,
                     'date_released' => $request->date_released,
                     'released_by' => $capturedName,
@@ -148,9 +151,27 @@ class TransactionController extends Controller
                     'ref_no' => $refNo,
                 ]);
 
-                Item::findOrFail($item['item_id'])->decrement('quantity', $item['quantity']);
+                // 2. Update the Inventory
+                $item = Item::findOrFail($itemData['item_id']);
+                $item->decrement('quantity', $itemData['quantity']);
+
+                // 3. Logic for Low Stock Warning
+                $item->refresh();
+                $finalQty = $item->quantity;
+                // Use item's min_stock if it exists, otherwise default to 10
+                $threshold = ($item->min_stock && $item->min_stock > 0) ? $item->min_stock : 10;
+
+                if ($finalQty <= $threshold) {
+                    $lowStockItems[] = "{$item->name} ({$finalQty} left)";
+                }
             }
         });
+
+        // If any items hit the threshold, return with a warning flash message
+        if (count($lowStockItems) > 0) {
+            $names = implode(', ', $lowStockItems);
+            return back()->with('warning', "Stock Out recorded, but low stock detected for: {$names}");
+        }
 
         return back()->with('success', 'Stock Out recorded.');
     }

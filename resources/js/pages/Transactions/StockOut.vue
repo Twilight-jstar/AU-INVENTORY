@@ -58,6 +58,15 @@ const submit = () => {
         },
     });
 };
+
+const isExceedingAvailableStock = computed(() => {
+    return form.line_items.some(line => {
+        const item = props.items.find(i => i.id === line.item_id);
+        if (!item) return false;
+        return Number(line.quantity) > Number(item.quantity);
+    });
+});
+
 </script>
 
 <template>
