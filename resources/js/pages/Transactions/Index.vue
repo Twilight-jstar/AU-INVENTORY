@@ -13,7 +13,6 @@ const props = defineProps({
     categories: { type: Array, default: () => [] }
 });
 
-// State Management
 const activeTab = ref('all');
 const filterDept = ref('');
 const filterCategory = ref('');
@@ -23,25 +22,20 @@ const sortBy = ref('latest');
 const isModalOpen = ref(false);
 const selectedTransaction = ref(null);
 
-// Filter & Sort Logic
 const filteredTransactions = computed(() => {
     let result = [...props.transactions];
 
-    // 1. Tab Filtering (In / Out)
     if (activeTab.value === 'in') result = result.filter(t => t.type === 'In');
     else if (activeTab.value === 'out') result = result.filter(t => t.type === 'Out');
 
-    // 2. Department Filtering
     if (filterDept.value) {
         result = result.filter(t => t.department === filterDept.value);
     }
 
-    // 3. Category Filtering
     if (filterCategory.value) {
         result = result.filter(t => t.item?.category_id == filterCategory.value);
     }
 
-    // 4. Date Range Filtering
     if (startDate.value && endDate.value) {
         const start = new Date(startDate.value).setHours(0,0,0,0);
         const end = new Date(endDate.value).setHours(23,59,59,999);
@@ -51,28 +45,23 @@ const filteredTransactions = computed(() => {
         });
     }
 
-    // 5. Sorting Logic
     return result.sort((a, b) => {
         if (sortBy.value === 'latest' || sortBy.value === 'oldest') {
             const dateA = new Date(a.created_at).getTime();
             const dateB = new Date(b.created_at).getTime();
-            
             if (dateA !== dateB) {
                 return sortBy.value === 'latest' ? dateB - dateA : dateA - dateB;
             }
-            
             const idA = parseInt(String(a.id).replace(/[^0-9]/g, '')) || 0;
             const idB = parseInt(String(b.id).replace(/[^0-9]/g, '')) || 0;
             return sortBy.value === 'latest' ? idB - idA : idA - idB;
         }
-
         if (sortBy.value === 'az') return (a.item?.name || '').localeCompare(b.item?.name || '');
         if (sortBy.value === 'za') return (b.item?.name || '').localeCompare(a.item?.name || '');
         return 0;
     });
 });
 
-// Actions
 const exportDailyInReport = () => {
     if (!startDate.value) return;
     window.open(route('transactions.export-daily-in', { date: startDate.value }), '_blank');
@@ -80,7 +69,7 @@ const exportDailyInReport = () => {
 
 const exportDepartmentReport = () => {
     if (!filterDept.value) return;
-    window.open(route('transactions.export-department', { department: filterDept.value }), '_blank');
+    window.open(route('transactions.export-by-department', { department: filterDept.value }), '_blank');
 };
 
 const openViewModal = (trx) => { 
@@ -116,7 +105,6 @@ const resetFilters = () => {
     <Head title="Transaction History" />
     <AuthenticatedLayout>
         <div class="max-w-[1600px] mx-auto p-4 space-y-4">
-            
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div class="flex items-center gap-3">
                     <div class="p-2.5 bg-slate-900 rounded-xl text-white shadow-lg shadow-slate-200">
@@ -217,37 +205,28 @@ const resetFilters = () => {
                                         <span class="text-[10px] font-bold text-slate-400 uppercase">{{ formatDate(trx.created_at) }}</span>
                                     </div>
                                 </td>
-                                
                                 <td class="py-3 px-2">
                                     <div class="flex flex-col leading-tight max-w-[250px]">
-                                        <span class="font-bold text-slate-900 uppercase text-[12px] truncate">
-                                            {{ trx.item?.name || 'Unknown Item' }}
-                                        </span>
-                                        <span class="text-[10px] font-mono text-slate-400 tracking-tighter">
-                                            {{ trx.item?.product_code }}
-                                        </span>
+                                        <span class="font-bold text-slate-900 uppercase text-[12px] truncate">{{ trx.item?.name || 'Unknown Item' }}</span>
+                                        <span class="text-[10px] font-mono text-slate-400 tracking-tighter">{{ trx.item?.product_code }}</span>
                                     </div>
                                 </td>
-                                
                                 <td class="py-3 px-2">
                                     <span :class="trx.type === 'In' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-slate-600 bg-slate-50 border-slate-200'" 
                                             class="text-[9px] font-black uppercase px-2 py-0.5 rounded border leading-none inline-block max-w-full tracking-tighter">
                                         {{ trx.department || (trx.type === 'In' ? 'INBOUND' : 'GENERAL') }}
                                     </span>
                                 </td>
-                                
                                 <td class="py-3 px-2">
                                     <span class="text-[11px] text-slate-700 font-bold uppercase truncate block tracking-tight">
                                         {{ trx.received_by || trx.released_to || 'System' }}
                                     </span>
                                 </td>
-                                
                                 <td class="py-3 px-2 text-center">
                                     <span :class="trx.type === 'In' ? 'text-emerald-600' : 'text-purple-600'" class="font-black text-[12px]">
                                         {{ trx.type === 'In' ? '+' : '-' }}{{ trx.quantity }}
                                     </span>
                                 </td>
-                                
                                 <td class="py-3 px-4 text-right">
                                     <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button @click="openViewModal(trx)" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
@@ -274,7 +253,6 @@ const resetFilters = () => {
         <div v-if="isModalOpen" 
             class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
             @click.self="closeViewModal">
-            
             <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
                 <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                     <div class="flex items-center gap-3">
@@ -290,7 +268,6 @@ const resetFilters = () => {
                         <XCircle class="w-5 h-5" />
                     </button>
                 </div>
-
                 <div class="p-6 space-y-6">
                     <div class="flex gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                         <div class="p-3 bg-white rounded-xl shadow-sm border border-slate-200">
@@ -302,7 +279,6 @@ const resetFilters = () => {
                             <p class="text-[10px] font-mono text-slate-500">{{ selectedTransaction?.item?.product_code }}</p>
                         </div>
                     </div>
-
                     <div class="grid grid-cols-2 gap-6">
                         <div class="space-y-1">
                             <p class="text-[9px] text-slate-400 font-black uppercase flex items-center gap-1.5">
@@ -331,7 +307,6 @@ const resetFilters = () => {
                             <p class="text-[11px] font-bold text-slate-700 uppercase">{{ formatDate(selectedTransaction?.created_at) }}</p>
                         </div>
                     </div>
-
                     <div v-if="selectedTransaction?.note" class="pt-4 border-t border-slate-100">
                         <p class="text-[9px] text-slate-400 font-black uppercase mb-2">Remarks / Notes</p>
                         <div class="p-3 bg-amber-50/50 border border-amber-100 rounded-xl text-[11px] text-amber-900 italic font-medium">
@@ -339,7 +314,6 @@ const resetFilters = () => {
                         </div>
                     </div>
                 </div>
-
                 <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-2">
                     <a :href="route('transactions.export-pdf', selectedTransaction?.raw_id)" 
                         target="_blank"
@@ -356,12 +330,6 @@ const resetFilters = () => {
 </template>
 
 <style scoped>
-tbody tr {
-    animation: slideUp 0.3s ease-out forwards;
-}
-
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+tbody tr { animation: slideUp 0.3s ease-out forwards; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 </style>

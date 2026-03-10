@@ -7,34 +7,36 @@ use App\Models\StockIn;
 use App\Models\StockOut;
 use App\Models\Department;
 use App\Models\Category;
-use App\Models\Supplier; // Added for StockIn form
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class TransactionController extends Controller
 {
     public function index()
     {
-        $stockIn = StockIn::with(['item.category', 'supplier'])->get()->map(function ($record) {
+        $stockIn = StockIn::with(['item.category', 'user'])->get()->map(function ($record) {
             return [
-                'id' => 'IN-' . str_pad($record->id, 5, '0', STR_PAD_LEFT),
+                'id' => $record->ref_no,
                 'raw_id' => 'in-' . $record->id,
                 'created_at' => $record->created_at,
                 'item' => $record->item,
                 'type' => 'In',
                 'quantity' => $record->quantity,
                 'received_by' => $record->received_by,
+                'recorded_by' => $record->user->name ?? 'System',
                 'released_to' => null,
                 'department' => null,
-                'note' => "Supplier: " . ($record->supplier->name ?? 'N/A'),
+                'note' => "Supplier: " . ($record->supplier_name ?? 'N/A'),
             ];
         });
 
-        $stockOut = StockOut::with(['item.category'])->get()->map(function ($record) {
+        $stockOut = StockOut::with(['item.category', 'user'])->get()->map(function ($record) {
             return [
-                'id' => 'OUT-' . str_pad($record->id, 5, '0', STR_PAD_LEFT),
+                'id' => $record->ref_no,
                 'raw_id' => 'out-' . $record->id,
                 'created_at' => $record->created_at,
                 'item' => $record->item,
@@ -43,21 +45,16 @@ class TransactionController extends Controller
                 'department' => $record->department,
                 'released_to' => $record->released_to,
                 'released_by' => $record->released_by,
+                'recorded_by' => $record->user->name ?? 'System',
                 'note' => $record->purpose ?? 'Release',
             ];
         });
 
-        // Combined Sorting: Precise Timestamp + Numeric ID Tie-breaker for default arrangement
         $mergedTransactions = $stockIn->concat($stockOut)
             ->sort(function ($a, $b) {
-                // Primary sort: Date/Time descending
                 $dateCompare = $b['created_at'] <=> $a['created_at'];
                 if ($dateCompare !== 0) return $dateCompare;
-
-                // Secondary sort: Numeric ID suffix descending (e.g. 00002 > 00001)
-                $idA = (int) filter_var($a['id'], FILTER_SANITIZE_NUMBER_INT);
-                $idB = (int) filter_var($b['id'], FILTER_SANITIZE_NUMBER_INT);
-                return $idB <=> $idA;
+                return $b['raw_id'] <=> $a['raw_id'];
             })
             ->values();
 
@@ -72,8 +69,80 @@ class TransactionController extends Controller
     {
         return Inertia::render('Transactions/StockIn', [
             'items' => Item::orderBy('name')->get(),
-            'suppliers' => [] 
         ]);
+    }
+
+    public function stockOut()
+    {
+        return Inertia::render('Transactions/StockOut', [
+            'items' => Item::where('quantity', '>', 0)->orderBy('name')->get(),
+            'departments' => Department::where('is_active', true)->orderBy('name')->get(),
+        ]);
+    }
+
+    public function store_bulk_in(Request $request)
+    {
+        $request->validate([
+            'supplier_name' => 'required|string',
+            'date_received' => 'required|date',
+            'line_items' => 'required|array|min:1',
+            'line_items.*.item_id' => 'required|exists:items,id',
+            'line_items.*.quantity' => 'required|numeric|min:0.1',
+        ]);
+
+        DB::transaction(function () use ($request) {
+            $refNo = $request->date_received;
+            $capturedName = Auth::user()->name;
+
+            foreach ($request->line_items as $item) {
+                StockIn::create([
+                    'item_id' => $item['item_id'],
+                    'quantity' => $item['quantity'],
+                    'supplier_name' => $request->supplier_name,
+                    'date_received' => $request->date_received,
+                    'received_by' => $capturedName,
+                    'ref_no' => $refNo,
+                ]);
+
+                Item::findOrFail($item['item_id'])->increment('quantity', $item['quantity']);
+            }
+        });
+
+        return back()->with('success', 'Stock In recorded.');
+    }
+
+    public function store_bulk_out(Request $request)
+    {
+        $request->validate([
+            'department' => 'required',
+            'released_to' => 'required|string',
+            'date_released' => 'required|date',
+            'line_items' => 'required|array|min:1',
+            'line_items.*.item_id' => 'required|exists:items,id',
+            'line_items.*.quantity' => 'required|numeric|min:0.1',
+        ]);
+
+        DB::transaction(function () use ($request) {
+            $refNo = $request->date_released;
+            $capturedName = Auth::user()->name;
+
+            foreach ($request->line_items as $item) {
+                StockOut::create([
+                    'item_id' => $item['item_id'],
+                    'quantity' => $item['quantity'],
+                    'department' => $request->department,
+                    'date_released' => $request->date_released,
+                    'released_by' => $capturedName,
+                    'released_to' => $request->released_to,
+                    'purpose' => $request->purpose ?? 'Standard Issuance',
+                    'ref_no' => $refNo,
+                ]);
+
+                Item::findOrFail($item['item_id'])->decrement('quantity', $item['quantity']);
+            }
+        });
+
+        return back()->with('success', 'Stock Out recorded.');
     }
 
     public function exportDailyIn(Request $request)
@@ -81,105 +150,27 @@ class TransactionController extends Controller
         $request->validate(['date' => 'required|date']);
         $date = $request->date;
 
-        $transactions = StockIn::whereDate('created_at', $date)
-            ->with(['item.category', 'item.unit'])
+        $transactions = StockIn::whereDate('date_received', $date)
+            ->with(['item.unit'])
             ->get()
-            ->map(function ($trx) {
-                // We cast to (object) so the Blade can use -> notation
-                return (object) [
-                    'product_code'   => $trx->item->product_code ?? 'N/A',
-                    // This MUST match the Blade template's variable name
-                    'total_quantity' => $trx->quantity, 
-                    'item'           => $trx->item, 
-                    'combined_remarks' => "Supplier: " . ($trx->supplier_name ?? 'N/A'),
-                ];
-            });
-
-        $formattedDate = \Carbon\Carbon::parse($date)->format('M d, Y');
-        
-        return Pdf::loadView('pdf.bulk_transactions', [
-            'transactions'  => $transactions,
-            'title'         => "DAILY STOCK IN REPORT: " . $formattedDate,
-            'department'    => 'INBOUND / SUPPLIER',
-        ])
-        ->setPaper('a4', 'landscape')
-        ->stream("Daily-Stock-In-{$date}.pdf");
-    }
-
-    public function stockOut()
-    {
-        return Inertia::render('Transactions/StockOut', [
-            'items' => Item::where('quantity', '>', 0)->orderBy('name')->get(), 
-            'departments' => Department::where('is_active', true)->orderBy('name')->get(),
-        ]);
-    }
-
-    public function store(Request $request)
-    {
-        // 1. Change validation to string since you don't have a suppliers table
-        $validated = $request->validate([
-            'item_id' => 'required|exists:items,id',
-            'quantity' => 'required|numeric|min:0.1',
-            'received_by' => 'required|string|max:255',
-            'supplier_id' => 'required|string|max:255', // Changed from exists:suppliers
-            'date_received' => 'required|date',
-            'unit_cost' => 'nullable|numeric',
-        ]);
-
-        DB::transaction(function () use ($validated) {
-            // 2. Map 'supplier_id' (the text from Vue) to whatever your DB column is
-            // If your StockIn model uses 'supplier_name', change the key below:
-            StockIn::create([
-                'item_id' => $validated['item_id'],
-                'quantity' => $validated['quantity'],
-                'received_by' => $validated['received_by'],
-                'supplier_name' => $validated['supplier_id'], // Adjust column name if needed
-                'date_received' => $validated['date_received'],
-                'unit_cost' => $validated['unit_cost'] ?? 0,
+            ->map(fn($trx) => (object)[
+                'ref_no' => $trx->ref_no,
+                'date' => $trx->date_received,
+                'product_code' => $trx->item->product_code ?? 'N/A',
+                'total_quantity' => $trx->quantity,
+                'item' => $trx->item, 
+                'received_by' => $trx->received_by,
+                'combined_remarks' => "Supplier: " . ($trx->supplier_name ?? 'N/A'),
             ]);
 
-            // 3. Use 'quantity' instead of 'stock' to match your items table
-            $item = Item::find($validated['item_id']);
-            $item->increment('quantity', $validated['quantity']); 
-        });
+        if ($transactions->isEmpty()) {
+            return back()->with('error', 'No stock-in transactions found for this date.');
+        }
 
-        return redirect()->route('transactions.index')
-            ->with('success', 'Stock-in recorded successfully.');
-    }
-
-    public function store_bulk_out(Request $request)
-    {
-        $validated = $request->validate([
-            // 1. Match 'line_items' from your Vue form
-            'line_items' => 'required|array|min:1',
-            'line_items.*.item_id' => 'required|exists:items,id',
-            'line_items.*.quantity' => 'required|numeric|min:0.1',
-            'department' => 'required|string',
-            'released_to' => 'required|string',
-            'purpose' => 'nullable|string',
-            'date_released' => 'required|date', // Added validation for date
-        ]);
-
-        DB::transaction(function () use ($validated) {
-            foreach ($validated['line_items'] as $itemData) {
-                StockOut::create([
-                    'item_id' => $itemData['item_id'],
-                    'quantity' => $itemData['quantity'],
-                    'department' => $validated['department'],
-                    'released_to' => $validated['released_to'],
-                    'purpose' => $validated['purpose'],
-                    'date_released' => $validated['date_released'],
-                    'released_by' => auth()->user()->name,
-                ]);
-
-                // 2. Corrected from 'stock' to 'quantity'
-                $item = Item::findOrFail($itemData['item_id']);
-                $item->decrement('quantity', $itemData['quantity']);
-            }
-        });
-
-        return redirect()->route('transactions.index')
-            ->with('success', 'Bulk issuance completed and stock levels updated.');
+        return Pdf::loadView('pdf.bulk_transactions', [
+            'transactions' => $transactions,
+            'title' => "DAILY STOCK IN REPORT",
+        ])->setPaper('letter', 'portrait')->stream("Daily-Stock-In-{$date}.pdf");
     }
 
     public function exportByDepartment(Request $request)
@@ -188,58 +179,70 @@ class TransactionController extends Controller
         $department = $request->department;
 
         $transactions = StockOut::where('department', $department)
-            ->with(['item.category', 'item.unit'])
+            ->with(['item.unit'])
             ->get()
-            ->groupBy('item_id') // Group by item first to sum quantities
-            ->map(function ($group) {
-                $first = $group->first();
-                
-                return (object) [
-                    'product_code'   => $first->item->product_code ?? 'N/A',
-                    'total_quantity' => $group->sum('quantity'),
-                    'item'           => $first->item, // Keep the item object for unit/name access
-                    'combined_remarks' => $group->map(function($trx) {
-                            return ($trx->released_to ?? 'N/A') . ($trx->purpose ? " ({$trx->purpose})" : "");
-                        })->unique()->implode(', ')
-                ];
-            })
-            ->sortBy('product_code')
-            ->values(); // Reset keys to ensure a clean array for the loop
+            ->map(fn($trx) => (object)[
+                'ref_no' => $trx->ref_no,
+                'date' => $trx->date_released,
+                'product_code' => $trx->item->product_code ?? 'N/A',
+                'total_quantity' => $trx->quantity,
+                'item' => $trx->item,
+                'released_by' => $trx->released_by,
+                'released_to' => $trx->released_to,
+                'combined_remarks' => ($trx->released_to ?? 'N/A') . ($trx->purpose ? " ({$trx->purpose})" : "")
+            ])->sortByDesc('date')->values();
 
-        $title = "STOCK ISSUANCE FORM";
+        if ($transactions->isEmpty()) {
+            return back()->with('error', 'No issuance records found for this department.');
+        }
 
         return Pdf::loadView('pdf.bulk_transactions', [
             'transactions' => $transactions,
-            'title'        => $title,
-            'department'   => $department
-        ])
-        ->setPaper('letter', 'portrait')
-        ->stream("Registry-{$department}.pdf");
+            'title' => "STOCK ISSUANCE FORM",
+            'department' => $department,
+            'received_by_name' => $transactions->first()->released_to ?? null
+        ])->setPaper('letter', 'portrait')->stream("Registry-{$department}.pdf");
     }
 
     public function exportPdf($id)
     {
         if (str_starts_with($id, 'in-')) {
             $realId = str_replace('in-', '', $id);
-            $transaction = StockIn::with('item')->findOrFail($realId);
-            
-            $transaction->type = 'In'; // Manual nating nilalagyan ng type
-            $pdf = Pdf::loadView('pdf.transaction', compact('transaction'))
-            ->setPaper('letter', 'portrait');
-            return $pdf->download('Stock-In-Report-' . $realId . '.pdf');
+            $trx = StockIn::with(['item.unit'])->findOrFail($realId);
+            $transactions = collect([(object)[
+                'ref_no' => $trx->ref_no,
+                'date' => $trx->date_received,
+                'product_code' => $trx->item->product_code,
+                'total_quantity' => $trx->quantity,
+                'item' => $trx->item,
+                'received_by' => $trx->received_by,
+                'combined_remarks' => "Supplier: " . $trx->supplier_name
+            ]]);
+            return Pdf::loadView('pdf.bulk_transactions', [
+                'transactions' => $transactions, 
+                'title' => "STOCK-IN SLIP"
+            ])->setPaper('letter', 'portrait')->stream("Stock-In-{$realId}.pdf");
         }
 
-        // 2. Check kung Stock Out (may 'out-' sa unahan)
         if (str_starts_with($id, 'out-')) {
             $realId = str_replace('out-', '', $id);
-            $transaction = StockOut::with('item')->findOrFail($realId);
-            
-            $transaction->type = 'Out'; // Manual nating nilalagyan ng type
-            $pdf = Pdf::loadView('pdf.transaction', compact('transaction'))
-            ->setPaper('letter', 'portrait');
-            return $pdf->download('Stock-Out-Report-' . $realId . '.pdf');
+            $trx = StockOut::with(['item.unit'])->findOrFail($realId);
+            $transactions = collect([(object)[
+                'ref_no' => $trx->ref_no,
+                'date' => $trx->date_released,
+                'product_code' => $trx->item->product_code,
+                'total_quantity' => $trx->quantity,
+                'item' => $trx->item,
+                'released_by' => $trx->released_by,
+                'combined_remarks' => $trx->released_to . " (" . $trx->purpose . ")"
+            ]]);
+            return Pdf::loadView('pdf.bulk_transactions', [
+                'transactions' => $transactions, 
+                'title' => "STOCK-OUT SLIP",
+                'received_by_name' => $trx->released_to
+            ])->setPaper('letter', 'portrait')->stream("Stock-Out-{$realId}.pdf");
         }
 
-        abort(404, 'Transaction not found.');
+        abort(404);
     }
 }

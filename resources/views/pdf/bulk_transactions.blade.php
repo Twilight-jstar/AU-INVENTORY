@@ -3,182 +3,204 @@
 <head>
     <title>{{ $title }}</title>
     <style>
-        @page { size: letter portrait; margin: 30px; }
-        body { font-family: 'Helvetica', sans-serif; font-size: 10px; color: #333; margin: 0; padding: 0; }
+        /* PDF Page Setup */
+        @page { 
+            size: letter portrait; 
+            margin: 30px 40px; 
+        }
         
-        /* Reference Number sa Taas */
-        .ref-no { 
-            position: absolute; 
-            top: -10px; 
-            right: 0; 
-            font-size: 9px; 
-            font-weight: bold;
-            color: #666;
+        body { 
+            font-family: 'Helvetica', sans-serif; 
+            font-size: 10px; 
+            color: #333; 
+            line-height: 1.2; 
+            margin: 0;
+            padding: 0;
         }
 
-        /* Header Table */
+        /* Header Section */
         .header-table { 
             width: 100%; 
             border-bottom: 2px solid #000; 
-            padding-bottom: 10px; 
-            margin-bottom: 15px;
-            border-collapse: collapse;
+            padding-bottom: 8px; 
+            margin-bottom: 15px; 
         }
-        
-        .school-name { 
-            font-size: 18px; 
-            font-weight: bold; 
-            color: #551359; 
-            margin: 0;
-            line-height: 1.2;
-        }
-        
-        .header-text { text-align: center; vertical-align: middle; }
 
         .report-title { 
             text-align: center; 
-            font-size: 14px; 
+            font-size: 13px; 
             font-weight: bold; 
             text-decoration: underline; 
-            margin: 10px 0; 
+            margin-bottom: 20px; 
             text-transform: uppercase; 
         }
-        
-        /* Main Table Styles - New Column Arrangement */
-        .main-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .main-table th { 
-            background-color: #f1f5f9; 
-            color: #334155; 
-            font-size: 9px; 
-            border: 1px solid #ccc; 
-            padding: 8px; 
-            text-transform: uppercase; 
-        }
-        .main-table td { 
-            border: 1px solid #ccc; 
-            padding: 6px; 
-            vertical-align: middle; 
-            word-wrap: break-word; 
-        }
-        
-        .text-center { text-align: center; }
 
-        /* Signature Section - Pantay na Layout */
-        .signature-section {
-            width: 100%;
-            margin-top: 50px;
+        /* Compact Transaction Containers */
+        .transaction-container { 
+            margin-bottom: 15px; 
+            page-break-inside: avoid; 
+        }
+
+        .ref-table { 
+            width: 100%; 
+            background: #f9f9f9; 
+            border: 1px solid #000; 
+            margin-bottom: -1px; 
+        }
+
+        .ref-table td { 
+            padding: 4px 10px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            font-size: 8.5px; 
+        }
+
+        /* Main Data Table */
+        .main-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            border: 1px solid #000; 
+        }
+
+        .main-table th { 
+            text-align: left; 
+            padding: 4px 6px; 
+            border: 1px solid #000; 
+            background: #ececec; 
+            text-transform: uppercase; 
+            font-size: 8px; 
+        }
+
+        .main-table td { 
+            padding: 4px 6px; 
+            border: 1px solid #000; 
+            vertical-align: middle; 
+            font-size: 9px; 
+        }
+
+        /* Signatories */
+        .footer-section { 
+            width: 100%; 
+            margin-top: 40px; 
+            page-break-inside: avoid; 
             border-collapse: collapse;
         }
-        .signature-section td {
-            width: 50%;
-            vertical-align: top;
-            border: none;
-            padding: 0;
-        }
-        .sig-container { margin-top: 30px; }
 
-        .footer { 
-            position: fixed; 
-            bottom: -10px; 
-            width: 100%; 
+        .sig-box { 
+            width: 45%; 
+            vertical-align: top; 
+        }
+
+        .sig-subtext { 
             font-size: 8px; 
-            text-align: center; 
-            color: #94a3b8; 
-            border-top: 1px solid #eee; 
-            padding-top: 5px; 
+            color: #555; 
+            margin-bottom: 2px; 
         }
     </style>
 </head>
 <body>
-
-    <div class="ref-no">
-        Report Code: BULK-{{ now()->format('Ymd') }}-{{ rand(100,999) }} | Official Record
-    </div>
-
     <table class="header-table">
         <tr>
-            <td style="width: 80px; text-align: left;">
-                <img src="{{ public_path('images/AUSL_logo.png') }}" style="height: 75px; width: 75px;">
+            <td style="text-align: center; vertical-align: middle;">
+                <div style="display: inline-block; text-align: left;">
+                    <div style="display: inline-block; vertical-align: middle; margin-right: 12px;">
+                        <img src="{{ public_path('images/ALF Logo 2022.png') }}" style="height: 50px; display: block;">
+                    </div>
+                    
+                    <div style="display: inline-block; vertical-align: middle; text-align: center;">
+                        <div style="font-size: 16px; font-weight: bold; color: #551359; line-height: 1.1;">
+                            ARELLANO LAW FOUNDATION
+                        </div>
+                        <div style="font-size: 8.5px; color: #333;">
+                            Taft Avenue Corner Menlo Street, Pasay City
+                        </div>
+                        <div style="font-size: 8.5px; color: #333;">
+                            Tel No. 404-3089 to 93 | www.arellanolawfoundation.com
+                        </div>
+                    </div>
+                </div>
             </td>
-            <td class="header-text">
-                <div class="school-name">ARELLANO LAW FOUNDATION</div>
-                <div style="font-size: 10px; margin-top: 2px;">Taft Avenue Corner Menlo Street, Pasay City, Metro Manila</div>
-                <div style="font-size: 10px; font-weight: bold; margin-top: 2px;">Tel. No. 404-3089 to 93</div>
-            </td>
-            <td style="width: 80px;"></td>
         </tr>
     </table>
 
     <div class="report-title">{{ $title }}</div>
 
-    <table style="width: 100%; margin-bottom: 10px;">
-        <tr>
-            <td style="font-weight: bold; font-size: 11px;">
-                @if(isset($department))
-                    Issued To: <span style="color: #551359;">{{ strtoupper($department) }}</span>
-                @else
-                    Office/Supplier: General Inventory
-                @endif
-            </td>
-            <td style="text-align: right; font-weight: bold; font-size: 10px;">
-                Date Generated: {{ now()->format('M d, Y h:i A') }}
-            </td>
-        </tr>
-    </table>
-
-    <table class="main-table">
-        <thead>
-            <tr>
-                <th width="5%">#</th>
-                <th width="18%">Product Code</th>
-                <th width="8%">Qty</th>
-                <th width="12%">Unit</th>
-                <th width="32%">Item Description</th>
-                <th width="25%">Remarks</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($transactions as $trx)
+    @foreach($transactions->groupBy('ref_no') as $refNo => $items)
+        <div class="transaction-container">
+            <table class="ref-table">
                 <tr>
-                    <td class="text-center">{{ $loop->iteration }}</td>
-                    <td class="text-center" style="font-family: monospace; font-weight: bold;">
-                        {{ $trx->product_code }}
-                    </td>
-                    <td class="text-center" style="font-weight: bold;">
-                        {{ number_format($trx->total_quantity, 0) }}
-                    </td>
-                    <td class="text-center">{{ $trx->item->unit->name ?? 'PCS' }}</td>
-                    <td style="text-transform: uppercase;">{{ $trx->item->name }}</td>
-                    <td style="font-size: 8px;">
-                        {{ $trx->combined_remarks }}
+                    <td width="50%">REF: <span style="color: #551359;">#{{ $refNo }}</span></td>
+                    <td width="50%" style="text-align: right; color: #551359;">
+                        {{ \Carbon\Carbon::parse($items->first()->date)->format('F d, Y') }}
                     </td>
                 </tr>
-            @endforeach
-        </tbody>
-    </table>
+            </table>
 
-    <table class="signature-section">
+            <table class="main-table">
+                <thead>
+                    <tr>
+                        <th width="5%" style="text-align: center;">#</th>
+                        <th width="8%" style="text-align: center;">Qty</th>
+                        <th width="10%" style="text-align: center;">Unit</th>
+                        <th width="42%">Property / Item Description</th>
+                        <th width="35%">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($items as $trx)
+                        <tr>
+                            <td style="text-align: center; color: #777;">{{ $loop->iteration }}</td>
+                            <td style="text-align: center; font-weight: bold;">{{ $trx->total_quantity }}</td>
+                            <td style="text-align: center;">{{ $trx->item->unit->name ?? 'PCS' }}</td>
+                            <td>
+                                <strong>{{ $trx->item->name }}</strong>
+                            </td>
+                            <td>{{ $trx->combined_remarks }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endforeach
+
+    @if($transactions->isEmpty())
+        <div style="text-align: center; padding: 30px; border: 1px dashed #ccc; text-transform: uppercase; font-size: 9px; color: #999;">
+            No transactions found for the selected criteria.
+        </div>
+    @endif
+
+    <table class="footer-section">
         <tr>
-            <td>
-                <div style="font-weight: bold;">Prepared By:</div>
-                <div class="sig-container">
-                    <span style="text-decoration: underline; text-transform: uppercase; font-weight: bold;">{{ auth()->user()->name ?? 'Property Custodian' }}</span>
-                    <div style="font-size: 9px; font-weight: normal; margin-top: 3px;">Property Office Representative</div>
+            <td class="sig-box">
+                <div class="sig-subtext" style="margin-bottom: 25px;">Prepared By:</div>
+                
+                <div style="border-bottom: 1.5px solid #000; padding-bottom: 2px;">
+                    <span style="font-weight: bold; text-transform: uppercase; font-size: 10px;">
+                        {{ auth()->user()->name ?? 'INVENTORY CUSTODIAN' }}
+                    </span>
+                </div>
+                
+                <div class="sig-subtext" style="margin-top: 5px; font-size: 8px;">
+                    Property Office Representative
                 </div>
             </td>
-            <td>
-                <div style="font-weight: bold;">Received By:</div>
-                <div class="sig-container">
-                    <span>____________________________________</span>
-                    <div style="font-size: 9px; font-weight: normal; margin-top: 3px;">Signature over Printed Name / Date</div>
+
+            <td style="width: 10%;"></td>
+
+            <td class="sig-box">
+                <div class="sig-subtext" style="margin-bottom: 25px;">Received By:</div>
+                
+                <div style="border-bottom: 1.5px solid #000; padding-bottom: 2px;">
+                    <span style="font-weight: bold; text-transform: uppercase; font-size: 10px;">
+                        {{ $received_by_name ?? '__________________________' }}
+                    </span>
+                </div>
+                
+                <div class="sig-subtext" style="margin-top: 5px; font-size: 8px;">
+                    Signature Over Printed Name / Date
                 </div>
             </td>
         </tr>
     </table>
-
-    <div class="footer">
-        Generated by AU Inventory Management System | Page <script type="text/php">echo $PAGE_NUM;</script> of <script type="text/php">echo $PAGE_COUNT;</script>
-    </div>
-
 </body>
 </html>
