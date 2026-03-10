@@ -7,6 +7,7 @@ use App\Http\Controllers\UnitController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\DashboardController; 
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\UserController;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -14,6 +15,11 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     
+
+// 0. ADMIN ONLY - USER MANAGEMENT (Dito natin isiningit sa pinakataas ng group)
+    Route::middleware(['role:Admin'])->group(function () {
+        Route::resource('users', UserController::class);
+    });
     // 1. PUBLIC ACCESS
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('items', [ItemController::class, 'index'])->name('items.index');
@@ -36,11 +42,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Transaction System
         Route::controller(TransactionController::class)->group(function () {
             
-            // Stock In/Out
-            Route::get('transactions/stock-in', 'stockIn')->name('transactions.stock-in');
-            Route::post('transactions/stock-in', 'store')->name('transactions.store');
-            Route::get('transactions/stock-out', 'stockOut')->name('transactions.stock-out');
-            Route::post('transactions/stock-out/bulk', 'store_bulk_out')->name('transactions.store_bulk_out');
+            // Stock In/Out - PROTECTED BY ROLE MIDDLEWARE
+            Route::middleware(['role:Custodian,Clerk'])->group(function () {
+                Route::get('transactions/stock-in', 'stockIn')->name('transactions.stock-in');
+                Route::post('transactions/stock-in', 'store')->name('transactions.store');
+                Route::get('transactions/stock-out', 'stockOut')->name('transactions.stock-out');
+                Route::post('transactions/stock-out/bulk', 'store_bulk_out')->name('transactions.store_bulk_out');
+            }); // <-- Make sure nandito itong closing bracket na 'to
 
             // Export & PDF Group
             Route::prefix('transactions/export')->group(function () {
