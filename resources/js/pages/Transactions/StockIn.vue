@@ -64,7 +64,7 @@ const submit = () => {
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 p-3">
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Supplier Name</label>
-                            <input v-model="form.supplier_name" type="text" class="w-full border-none ring-1 ring-slate-200 rounded-sm text-sm h-10 px-3 uppercase font-semibold focus:ring-slate-900 transition-all" required :disabled="recentlySubmitted" />
+                            <input v-model="form.supplier_name" type="text" class="w-full border-none ring-1 ring-slate-200 rounded-sm text-sm h-10 px-3 font-semibold focus:ring-slate-900 transition-all" required :disabled="recentlySubmitted" />
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date Received</label>
