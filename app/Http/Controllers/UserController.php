@@ -13,12 +13,14 @@ class UserController extends Controller
     /**
      * Ipakita ang listahan ng lahat ng users.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Kukunin natin lahat ng users sa database, naka-arrange by name
         $users = User::orderBy('name')->get();
 
-        // Ipapasa natin 'yung data sa 'Users/Index.vue' na gagawin natin mamaya
+        if ($request->wantsJson()) {
+            return response()->json($users);
+        }
+
         return Inertia::render('Users/Index', [
             'users' => $users
         ]);
@@ -29,7 +31,6 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        // I-check kung tama ba ang nilagay na data ni Admin
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users',
@@ -38,10 +39,16 @@ class UserController extends Controller
             'password' => 'required|string|min:8',
         ]);
 
-        // I-hash (i-encrypt) ang password bago i-save
         $validated['password'] = Hash::make($validated['password']);
 
-        User::create($validated);
+        $user = User::create($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'User created successfully.',
+                'user' => $user
+            ], 201);
+        }
 
         return redirect()->route('users.index')->with('success', 'User created successfully.');
     }
@@ -58,12 +65,18 @@ class UserController extends Controller
             'role' => 'required|string|in:Admin,Custodian,Clerk,Viewer',
         ]);
 
-        // Kung may tinype na bagong password, i-encrypt. Kung wala, wag isama sa update.
         if ($request->filled('password')) {
             $validated['password'] = Hash::make($request->password);
         }
 
         $user->update($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'User updated successfully.',
+                'user' => $user
+            ]);
+        }
 
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }
@@ -71,14 +84,20 @@ class UserController extends Controller
     /**
      * I-delete ang user.
      */
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
-        // Protection: Bawal i-delete ng Admin ang sarili niyang account
         if (auth()->id() === $user->id) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'You cannot delete your own account.'], 403);
+            }
             return back()->with('error', 'You cannot delete your own account.');
         }
 
         $user->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'User deleted successfully.']);
+        }
 
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
