@@ -1,41 +1,49 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\v1;
 
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Models\Item;
 use App\Models\Unit;
 use App\Models\Category;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Inertia\Inertia;
 
 class ItemController extends Controller
 {
-public function index()
+public function index(Request $request)
 {
-    return Inertia::render('Items/Index', [
-        'items' => Item::with(['category', 'unit'])->get()
-    ]);
+    $items = Item::with(['category', 'unit'])->get();
+
+    if ($request->wantsJson()) {
+        return response()->json($items);
+    }
 }
 
-public function show(Item $item)
+public function show(Request $request, Item $item)
 {
     Gate::authorize('view-inventory');
 
-    return Inertia::render('Items/Show', [
-        'item' => $item->load(['category', 'unit'])
-    ]);
+    $item->load(['category', 'unit']);
+
+    if ($request->wantsJson()) {
+        return response()->json($item);
+    }
 }
 
-public function create()
+public function create(Request $request)
 {
     Gate::authorize('manage-inventory');
 
-    return Inertia::render('Items/Create', [
-        // Only sending id and name keeps the payload light for the dropdowns
-        'categories' => Category::select('id', 'name')->get(),
-        'units' => Unit::select('id', 'name')->get()
-    ]);
+    $categories = Category::select('id', 'name')->get();
+    $units = Unit::select('id', 'name')->get();
+
+    if ($request->wantsJson()) {
+        return response()->json([
+            'categories' => $categories,
+            'units' => $units
+        ]);
+    }
 }
 
 public function store(Request $request)
@@ -52,21 +60,32 @@ public function store(Request $request)
         'description'  => 'nullable|string'
     ]);
 
-    Item::create($validated);
+    $item = Item::create($validated);
+
+    if ($request->wantsJson()) {
+        return response()->json([
+            'message' => 'Item created successfully.',
+            'item' => $item
+        ], 201);
+    }
     
     return redirect()->route('items.index')->with('message', 'Item created successfully.');
 }
 
-public function edit(Item $item)
+public function edit(Request $request, Item $item)
 {
     Gate::authorize('manage-inventory');
 
-    return Inertia::render('Items/Edit', [
-        'item' => $item,
-        // Ensure dropdown data is available for the Edit form
-        'categories' => Category::select('id', 'name')->get(),
-        'units' => Unit::select('id', 'name')->get()
-    ]);
+    $categories = Category::select('id', 'name')->get();
+    $units = Unit::select('id', 'name')->get();
+
+    if ($request->wantsJson()) {
+        return response()->json([
+            'item' => $item,
+            'categories' => $categories,
+            'units' => $units
+        ]);
+    }
 }
 
 public function update(Request $request, Item $item)
@@ -74,7 +93,6 @@ public function update(Request $request, Item $item)
     Gate::authorize('manage-inventory');
 
     $validated = $request->validate([
-        // Ignores the current item's ID during unique check to prevent false errors
         'product_code' => 'required|string|max:255|unique:items,product_code,' . $item->id,
         'name'         => 'required|string|max:255',
         'min_stock'    => 'required|numeric|min:0',
@@ -85,16 +103,29 @@ public function update(Request $request, Item $item)
 
     $item->update($validated);
 
+    if ($request->wantsJson()) {
+        return response()->json([
+            'message' => 'Item updated successfully.',
+            'item' => $item
+        ]);
+    }
+
     return redirect()->route('items.index')->with('message', 'Item updated successfully.');
 }
 
-public function destroy(Item $item)
+public function destroy(Request $request, Item $item)
 {
     Gate::authorize('delete-inventory');
 
     $item->delete();
+
+    if ($request->wantsJson()) {
+        return response()->json(['message' => 'Item deleted.']);
+    }
+
     return redirect()->route('items.index')->with('message', 'Item deleted.');
 }
+
 public function generateProductCode(Request $request)
 {
     $request->validate([
@@ -102,27 +133,18 @@ public function generateProductCode(Request $request)
     ]);
 
     $category = Category::findOrFail($request->category_id);
-    
-    // Kukunin ang pangalan ng category, aalisin ang spaces, at gagawing uppercase (e.g. "LAPTOP")
-    // Pwede nating kunin lang ang first 3 letters kung gusto mo, pero for now buong name muna
     $categoryPrefix = strtoupper(str_replace(' ', '', $category->name)); 
 
-    // Hahanapin ang pinakahuling item sa category na ito
     $latestItem = Item::where('category_id', $category->id)
                         ->orderBy('id', 'desc')
                         ->first();
 
     if (!$latestItem || !$latestItem->product_code) {
-        // Kung walang nahanap, ito ang unang item: CATEGORY-001
         $nextCode = $categoryPrefix . '-001';
     } else {
-        // Kung may nahanap (hal. "LAPTOP-005"), kukunin ang number sa dulo
         $parts = explode('-', $latestItem->product_code);
         $lastNumber = intval(end($parts)); 
-        
-        // Magdadagdag ng 1, at lalagyan ng leading zeros para maging 3 digits (e.g., "006")
         $nextNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT); 
-        
         $nextCode = $categoryPrefix . '-' . $nextNumber;
     }
 
