@@ -42,7 +42,7 @@ const submit = () => {
         <form @submit.prevent="submit" class="flex flex-col gap-6">
             <div class="grid gap-6">
                 <div class="grid gap-2">
-                    <Label for="username">Username</Label>
+                    <Label for="username">Username MO</Label>
                     <Input
                         id="username"
                         v-model="form.username" 
