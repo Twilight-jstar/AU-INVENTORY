@@ -19,8 +19,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 1. SHARED ACCESS (All Roles)
     // ==========================================
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('items', [ItemController::class, 'index'])->name('items.index');
-    Route::get('transactions', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('items', [ItemController::class, 'index'])->name('items');
+    Route::get('transactions', [TransactionController::class, 'index'])->name('transactions');
 
     // ==========================================
     // 2. INVENTORY OPERATIONS (Admin, Clerk, Custodian)

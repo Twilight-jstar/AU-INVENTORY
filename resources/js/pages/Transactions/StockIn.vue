@@ -44,7 +44,7 @@ const submit = () => {
     <AuthenticatedLayout>
         <div class="max-w-6xl mx-auto space-y-8 p-2 py-8">
             <div class="flex items-center gap-4 border-b border-slate-200 pb-6">
-                <Link :href="route('transactions.index')" class="p-2 bg-white ring-1 ring-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-all">
+                <Link :href="route('transactions')" class="p-2 bg-white ring-1 ring-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-all">
                     <ArrowLeft class="w-4 h-4" />
                 </Link>
                 <div>

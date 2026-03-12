@@ -1,21 +1,21 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\v1;
 
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Models\Item;
 use App\Models\StockIn;
 use App\Models\StockOut;
 use App\Models\Department;
 use App\Models\Category;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 
 class TransactionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $stockIn = StockIn::with(['item.category'])->get()->map(function ($record) {
             return [
@@ -53,26 +53,35 @@ class TransactionController extends Controller
             ->sort(fn($a, $b) => $b['created_at'] <=> $a['created_at'])
             ->values();
 
-        return Inertia::render('Transactions/Index', [
-            'transactions' => $mergedTransactions,
-            'departments' => Department::where('is_active', true)->orderBy('name')->get(),
-            'categories' => Category::orderBy('name')->get(),
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'transactions' => $mergedTransactions,
+                'departments' => Department::where('is_active', true)->orderBy('name')->get(),
+                'categories' => Category::orderBy('name')->get(),
+            ]);
+        }
     }
 
-    public function stockIn()
+    public function stockIn(Request $request)
     {
-        return Inertia::render('Transactions/StockIn', [
-            'items' => Item::orderBy('name')->get(),
-        ]);
+        $items = Item::orderBy('name')->get();
+
+        if ($request->wantsJson()) {
+            return response()->json(['items' => $items]);
+        }
     }
 
-    public function stockOut()
+    public function stockOut(Request $request)
     {
-        return Inertia::render('Transactions/StockOut', [
-            'items' => Item::where('quantity', '>', 0)->orderBy('name')->get(),
-            'departments' => Department::where('is_active', true)->orderBy('name')->get(),
-        ]);
+        $items = Item::where('quantity', '>', 0)->orderBy('name')->get();
+        $departments = Department::where('is_active', true)->orderBy('name')->get();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'items' => $items,
+                'departments' => $departments
+            ]);
+        }
     }
 
     public function store_bulk_in(Request $request)
@@ -100,6 +109,14 @@ class TransactionController extends Controller
                 Item::findOrFail($item['item_id'])->increment('quantity', $item['quantity']);
             }
         });
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Stock In recorded.',
+                'export_id' => 'in-' . $lastId
+            ], 201);
+        }
 
         return back()->with([
             'success' => 'Stock In recorded.',
@@ -146,9 +163,18 @@ class TransactionController extends Controller
             }
         });
 
-        $payload = ['success' => 'Stock Out recorded.', 'export_id' => 'out-' . $lastId];
+        $payload = [
+            'status' => 'success',
+            'message' => 'Stock Out recorded.', 
+            'export_id' => 'out-' . $lastId
+        ];
+
         if (count($lowStockItems) > 0) {
             $payload['warning'] = "Low stock detected: " . implode(', ', $lowStockItems);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json($payload, 201);
         }
 
         return back()->with($payload);
@@ -173,7 +199,11 @@ class TransactionController extends Controller
                 ];
             });
 
-        if ($transactions->isEmpty()) return back()->with('error', 'No records found.');
+        if ($transactions->isEmpty()) {
+            return $request->wantsJson() 
+                ? response()->json(['error' => 'No records found.'], 404) 
+                : back()->with('error', 'No records found.');
+        }
 
         return Pdf::loadView('pdf.bulk_transactions', [
             'transactions' => $transactions,
@@ -194,27 +224,29 @@ class TransactionController extends Controller
                     'date' => $trx->date_released,
                     'total_quantity' => $trx->quantity, 
                     'item' => $trx->item,
-                    // Updated remarks to show the person released to + purpose
                     'combined_remarks' => ($trx->purpose ? " ({$trx->purpose})" : ""),
                     'released_by' => $trx->released_by,
                     'released_to' => $trx->released_to
                 ];
             });
 
-        if ($transactions->isEmpty()) return back()->with('error', 'No records found.');
+        if ($transactions->isEmpty()) {
+            return $request->wantsJson() 
+                ? response()->json(['error' => 'No records found.'], 404) 
+                : back()->with('error', 'No records found.');
+        }
 
-        // Get the most recent receiver and date for the footer
         $lastTrx = $transactions->last();
 
         return Pdf::loadView('pdf.bulk_transactions', [
             'transactions' => $transactions,
             'title' => "STOCK ISSUANCE FORM",
-            'received_by_name' => $lastTrx->released_to, // Now shows Name, not Dept
-            'received_by_date' => $lastTrx->date         // Passes date for footer
+            'received_by_name' => $lastTrx->released_to,
+            'received_by_date' => $lastTrx->date
         ])->setPaper('letter', 'portrait')->stream("Registry-{$request->department}.pdf");
     }
 
-    public function exportPdf($id)
+    public function exportPdf(Request $request, $id)
     {
         if (str_starts_with($id, 'in-')) {
             $realId = str_replace('in-', '', $id);
@@ -254,8 +286,8 @@ class TransactionController extends Controller
             return Pdf::loadView('pdf.bulk_transactions', [
                 'transactions' => $data, 
                 'title' => "STOCK ISSUANCE FORM",
-                'received_by_name' => $trx->released_to,    // Individual receiver name
-                'received_by_date' => $trx->date_released  // Date of transaction
+                'received_by_name' => $trx->released_to,
+                'received_by_date' => $trx->date_released
             ])->setPaper('letter', 'portrait')->stream("Stock-Out-{$realId}.pdf");
         }
 
