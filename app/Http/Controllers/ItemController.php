@@ -39,8 +39,11 @@ public function create()
 
 public function store(Request $request)
 {
-    // Use the manual validator so we can inspect errors without a redirect
-    $validator = \Validator::make($request->all(), [
+    Gate::authorize('manage-inventory');
+
+    // We use $request->validate() but we want to make sure it doesn't 
+    // just bounce us to the dashboard if it fails.
+    $validated = $request->validate([
         'product_code' => 'required|unique:items,product_code',
         'name'         => 'required|string|max:255',
         'quantity'     => 'required|numeric|min:0',
@@ -50,18 +53,11 @@ public function store(Request $request)
         'description'  => 'nullable|string'
     ]);
 
-    if ($validator->fails()) {
-        // This stops the redirect and returns the errors as JSON
-        return response()->json([
-            'success' => false,
-            'errors' => $validator->errors(),
-            'received_data' => $request->all()
-        ], 422);
-    }
-
-    Item::create($validator->validated());
+    // If it passes validation, it hits this line:
+    $item = Item::create($validated);
     
-    return redirect()->route('items');
+    // Use a full path redirect to avoid "back()" confusion
+    return redirect('/items')->with('success', 'Item created!');
 }
 
 public function edit(Item $item)
