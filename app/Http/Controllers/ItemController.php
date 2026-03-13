@@ -13,6 +13,8 @@ class ItemController extends Controller
 {
     public function index()
     {
+        Gate::authorize('view-inventory'); 
+
         return Inertia::render('Items/Index', [
             'items' => Item::with(['category', 'unit'])->get()
         ]);

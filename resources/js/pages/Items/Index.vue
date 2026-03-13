@@ -42,7 +42,7 @@ const isLowStock = (item) => {
                 
                 <div class="flex items-center gap-3">
                     <Link 
-                        v-if="$page.props.auth.user.role !== 'Viewer'"
+                        v-if="$page.props.auth.user.role !== 'viewer'"
                         :href="route('items.create')" 
                         class="inline-flex items-center px-4 py-2 bg-slate-900 hover:bg-purple-900 text-white text-xs font-bold rounded-sm shadow-sm transition-all uppercase tracking-widest"
                     >
@@ -62,7 +62,7 @@ const isLowStock = (item) => {
                                 <th class="py-4 px-6">Classification</th>
                                 <th class="py-4 px-6 text-center">Current Stock</th>
                                 <th class="py-4 px-6">Unit</th>
-                                <th v-if="$page.props.auth.user.role !== 'Viewer'" class="py-4 px-6 text-right">Actions</th>
+                                <th v-if="$page.props.auth.user.role !== 'viewer'" class="py-4 px-6 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="text-slate-700 text-sm divide-y divide-slate-100">
@@ -97,14 +97,14 @@ const isLowStock = (item) => {
                                     {{ item.unit?.name || 'unit' }}
                                 </td>
                                 
-                                <td v-if="$page.props.auth.user.role !== 'Viewer'" class="py-4 px-6 text-right">
+                                <td v-if="$page.props.auth.user.role !== 'viewer'" class="py-4 px-6 text-right">
                                     <div class="flex justify-end gap-3">
                                         <Link :href="route('items.edit', item.id)" class="text-slate-400 hover:text-purple-600 transition-colors">
                                             <Pencil class="w-4 h-4" />
                                         </Link>
                                         
                                         <button 
-                                            v-if="['Admin', 'Custodian'].includes($page.props.auth.user.role)"
+                                            v-if="['admin', 'custodian'].includes($page.props.auth.user.role)"
                                             @click="deleteItem(item.id)" 
                                             class="text-slate-400 hover:text-red-600 transition-colors"
                                         >
@@ -132,7 +132,7 @@ const isLowStock = (item) => {
 
             <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase font-bold tracking-widest">
                 <div class="w-1 h-1 bg-slate-300 rounded-full"></div>
-                <span v-if="$page.props.auth.user.role === 'Viewer'">Read-Only Audit View</span>
+                <span v-if="$page.props.auth.user.role === 'viewer'">Read-Only Audit View</span>
                 <span v-else>Authorized Registry Management: {{ $page.props.auth.user.role }}</span>
             </div>
         </div>
