@@ -39,10 +39,9 @@ public function create()
 
 public function store(Request $request)
 {
-    // Log the data so we can see it even if it redirects
-    \Log::info('Form Data:', $request->all());
-
-    $validated = $request->validate([
+    // This will stop the redirect and show you EXACTLY what is being sent
+    // and if there are any validation errors.
+    $validator = \Validator::make($request->all(), [
         'product_code' => 'required|unique:items,product_code',
         'name'         => 'required|string|max:255',
         'quantity'     => 'required|numeric|min:0',
@@ -52,9 +51,14 @@ public function store(Request $request)
         'description'  => 'nullable|string'
     ]);
 
-    Item::create($validated);
+    if ($validator->fails()) {
+        // This will kill the request and print the errors to your browser screen
+        dd('Validation Failed!', $validator->errors()->toArray(), 'Request Data:', $request->all());
+    }
+
+    Item::create($validator->validated());
     
-    return redirect()->route('items')->with('message', 'Item created successfully.');
+    return redirect()->route('items');
 }
 
 public function edit(Item $item)
