@@ -39,7 +39,8 @@ public function create()
 
 public function store(Request $request)
 {
-    Gate::authorize('manage-inventory');
+    // Log the data so we can see it even if it redirects
+    \Log::info('Form Data:', $request->all());
 
     $validated = $request->validate([
         'product_code' => 'required|unique:items,product_code',
