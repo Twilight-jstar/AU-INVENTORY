@@ -15,17 +15,27 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        
+        // 1. Cookie Encryption Exceptions
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        // 2. CSRF Exceptions - This stops the redirect to Dashboard on Save
+        $middleware->validateCsrfTokens(except: [
+            'items',
+            'items/*',
+        ]);
+
+        // 3. Web Middleware Stack
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // DITO NATIN IDINAGDAG YUNG ALIAS PARA SA ROLE MIDDLEWARE
+        // 4. Middleware Aliases
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
