@@ -39,8 +39,7 @@ public function create()
 
 public function store(Request $request)
 {
-    // This will stop the redirect and show you EXACTLY what is being sent
-    // and if there are any validation errors.
+    // Use the manual validator so we can inspect errors without a redirect
     $validator = \Validator::make($request->all(), [
         'product_code' => 'required|unique:items,product_code',
         'name'         => 'required|string|max:255',
@@ -52,8 +51,12 @@ public function store(Request $request)
     ]);
 
     if ($validator->fails()) {
-        // This will kill the request and print the errors to your browser screen
-        dd('Validation Failed!', $validator->errors()->toArray(), 'Request Data:', $request->all());
+        // This stops the redirect and returns the errors as JSON
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors(),
+            'received_data' => $request->all()
+        ], 422);
     }
 
     Item::create($validator->validated());
