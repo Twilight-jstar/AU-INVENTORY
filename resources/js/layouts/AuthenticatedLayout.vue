@@ -15,7 +15,8 @@ const page = usePage();
 // Computed properties for auth and flash data
 const flash = computed(() => page.props.flash as FlashProps);
 const userName = computed(() => page.props.auth.user?.name || 'Guest User');
-const userRole = computed(() => (page.props.auth.user?.role as string) || 'viewer');
+// Standardize userRole to lowercase immediately for easier matching
+const userRole = computed(() => (page.props.auth.user?.role as string)?.toLowerCase() || 'viewer');
 
 // Reactive Notification Logic
 const showNotification = ref(false);
@@ -50,7 +51,6 @@ const navigationGroups = [
     {
         label: 'Activity Logs',
         items: [
-            // Fixed routeName to match transactions.index in web.php
             { name: 'Stock In / Stock Out', routeName: 'transactions.index', icon: HistoryIcon, active: 'transactions.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
         ]
     }
@@ -58,24 +58,18 @@ const navigationGroups = [
 
 const isRouteActive = (activePattern: string) => {
     try { 
-        return route().current(activePattern) || window.location.pathname.includes(activePattern.replace('.*', ''));
+        return route().current(activePattern);
     } catch (e) { 
         return false; 
     }
 };
 
-/**
- * Filtered Navigation logic
- * Standardizes userRole and allowed roles to lowercase to prevent 302 redirects 
- * caused by "Custodian" vs "custodian" string mismatches.
- */
 const filteredGroups = computed(() => {
-    const currentUserRole = String(userRole.value).toLowerCase();
-    
     return navigationGroups.map(group => ({
         ...group,
         items: group.items.filter(item => {
-            return item.roles.some(role => role.toLowerCase() === currentUserRole);
+            // Check if user's lowercase role exists in the item's role array
+            return item.roles.includes(userRole.value);
         })
     })).filter(group => group.items.length > 0);
 });
