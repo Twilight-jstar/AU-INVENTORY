@@ -18,17 +18,18 @@ Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Items Management
-    // Specific route MUST come before resource
     Route::get('items/generate-code', [ItemController::class, 'generateProductCode'])->name('items.generate-code');
-    Route::resource('items', ItemController::class); // This creates items.index, items.store, etc.
+    // Standard resource (creates items.index)
+    Route::resource('items', ItemController::class); 
 
-    // Helpers
     Route::resource('categories', CategoryController::class);
     Route::resource('units', UnitController::class);
     
-    // Transactions
-    Route::prefix('transactions')->name('transactions.')->group(function () {
-        Route::get('/', [TransactionController::class, 'index'])->name('index');
+    // Transactions - Fixed for clarity
+    Route::group(['prefix' => 'transactions', 'as' => 'transactions.'], function () {
+        // This ensures the name is definitely 'transactions.index'
+        Route::get('/', [TransactionController::class, 'index'])->name('index'); 
+        
         Route::get('stock-in', [TransactionController::class, 'stockIn'])->name('stock-in');
         Route::post('stock-in/bulk', [TransactionController::class, 'store_bulk_in'])->name('store_bulk_in');
         Route::get('stock-out', [TransactionController::class, 'stockOut'])->name('stock-out');
