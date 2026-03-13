@@ -55,7 +55,7 @@ watch(() => page.props.flash as FlashProps, (newFlash) => {
 }, { deep: true, immediate: true });
 
 // ============================================================
-// NAVIGATION CONFIGURATION (Standardized with web.php)
+// NAVIGATION CONFIGURATION
 // ============================================================
 const navigationGroups = [
     {
@@ -67,8 +67,8 @@ const navigationGroups = [
     {
         label: 'Inventory Control',
         items: [
-            // Updated to items.index to match Resource Route
-            { name: 'Inventory Items', routeName: 'items.index', icon: Package, active: 'items.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
+            // Using direct path '/items' to bypass Ziggy naming sync issues
+            { name: 'Inventory Items', routeName: '/items', icon: Package, active: 'items.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
             { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['Admin', 'Clerk', 'Custodian'] },
             { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['Admin', 'Clerk', 'Custodian'] },
         ]
@@ -88,19 +88,24 @@ const navigationGroups = [
 ];
 
 // Safety helpers for Ziggy routes
-const safeRoute = (name: string) => {
+const safeRoute = (nameOrPath: string) => {
     try {
-        // If Ziggy knows the name, use it. 
-        // Otherwise, if it's 'items.index', try the hardcoded path.
-        if (route().has(name)) {
-            return route(name);
+        // 1. If it's an absolute path, return it directly
+        if (nameOrPath.startsWith('/')) {
+            return nameOrPath;
+        }
+
+        // 2. If it's a route name Ziggy knows, use it
+        if (route().has(nameOrPath)) {
+            return route(nameOrPath);
         }
         
-        if (name === 'items.index') return '/items';
+        // 3. Fallback for the items page specifically
+        if (nameOrPath === 'items.index') return '/items';
         
         return '#'; 
     } catch (e) {
-        return name === 'items.index' ? '/items' : '#'; 
+        return nameOrPath.includes('items') ? '/items' : '#'; 
     }
 };
 
