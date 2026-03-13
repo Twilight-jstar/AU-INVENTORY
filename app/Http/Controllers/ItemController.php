@@ -40,9 +40,13 @@ public function create()
 
 public function store(Request $request)
 {
+    // If you don't see this message on screen after clicking save, 
+    // the problem is NOT in this file. It is in your Server/Middleware.
+    // dd('Controller reached!', $request->all());
+
     Gate::authorize('manage-inventory');
 
-    $validated = $request->validate([
+    $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
         'product_code' => 'required|unique:items,product_code',
         'name'         => 'required|string|max:255',
         'quantity'     => 'required|numeric|min:0',
@@ -52,9 +56,18 @@ public function store(Request $request)
         'description'  => 'nullable|string'
     ]);
 
-    Item::create($validated);
-    
-    return redirect()->route('items')->with('message', 'Item created successfully.');
+    if ($validator->fails()) {
+        // This will force the errors to show up instead of redirecting you
+        dd('Validation Failed!', $validator->errors()->toArray());
+    }
+
+    try {
+        Item::create($validator->validated());
+        return redirect()->route('items')->with('message', 'Item created successfully.');
+    } catch (\Exception $e) {
+        // This will show you if the database is missing a column
+        dd('Database Error!', $e->getMessage());
+    }
 }
 
 public function edit(Item $item)
