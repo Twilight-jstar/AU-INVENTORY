@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3'; 
 import { 
     Package, Tags, Scale, History as HistoryIcon, LayoutDashboard,
-    LogOut, User, ChevronUp, X, CircleCheck, CircleAlert, TriangleAlert
+    LogOut, User, ChevronUp, X, CircleCheck, CircleAlert
 } from 'lucide-vue-next';
 import { route } from 'ziggy-js';
 
@@ -15,7 +15,7 @@ const page = usePage();
 // Computed properties for auth and flash data
 const flash = computed(() => page.props.flash as FlashProps);
 const userName = computed(() => page.props.auth.user?.name || 'Guest User');
-const userRole = computed(() => (page.props.auth.user?.role as string) || 'Viewer');
+const userRole = computed(() => (page.props.auth.user?.role as string) || 'viewer');
 
 // Reactive Notification Logic
 const showNotification = ref(false);
@@ -30,27 +30,28 @@ const navigationGroups = [
     {
         label: 'Analytics',
         items: [
-            { name: 'Dashboard', routeName: 'dashboard', icon: LayoutDashboard, active: 'dashboard', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
+            { name: 'Dashboard', routeName: 'dashboard', icon: LayoutDashboard, active: 'dashboard', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
         ]
     },
     {
         label: 'Inventory Control',
         items: [
-            { name: 'Inventory Items', routeName: 'items.index', icon: Package, active: 'items.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
-            { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['Admin', 'Clerk', 'Custodian'] },
-            { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['Admin', 'Clerk', 'Custodian'] },
+            { name: 'Inventory Items', routeName: 'items.index', icon: Package, active: 'items.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
+            { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['admin', 'clerk', 'custodian'] },
+            { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['admin', 'clerk', 'custodian'] },
         ]
     },
     {
         label: 'System Access',
         items: [
-            { name: 'Manage Users', routeName: 'users.index', icon: User, active: 'users.*', roles: ['Admin'] },
+            { name: 'Manage Users', routeName: 'users.index', icon: User, active: 'users.*', roles: ['admin'] },
         ]
     },
     {
         label: 'Activity Logs',
         items: [
-            { name: 'Stock In / Stock Out', routeName: '/transactions', icon: HistoryIcon, active: 'transactions.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
+            // Fixed routeName to match transactions.index in web.php
+            { name: 'Stock In / Stock Out', routeName: 'transactions.index', icon: HistoryIcon, active: 'transactions.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
         ]
     }
 ];
@@ -63,15 +64,24 @@ const isRouteActive = (activePattern: string) => {
     }
 };
 
+/**
+ * Filtered Navigation logic
+ * Standardizes userRole and allowed roles to lowercase to prevent 302 redirects 
+ * caused by "Custodian" vs "custodian" string mismatches.
+ */
 const filteredGroups = computed(() => {
+    const currentUserRole = String(userRole.value).toLowerCase();
+    
     return navigationGroups.map(group => ({
         ...group,
-        items: group.items.filter(item => item.roles.includes(userRole.value))
+        items: group.items.filter(item => {
+            return item.roles.some(role => role.toLowerCase() === currentUserRole);
+        })
     })).filter(group => group.items.length > 0);
 });
 
 const pageTitle = computed(() => {
-    if (page.props.title) return page.props.title;
+    if (page.props.title) return page.props.title as string;
     for (const group of navigationGroups) {
         const activeNav = group.items.find(item => isRouteActive(item.active));
         if (activeNav) return activeNav.name;
@@ -119,7 +129,7 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
                         <Link 
                             v-for="item in group.items" 
                             :key="item.name"
-                            :href="item.routeName.startsWith('/') ? item.routeName : route(item.routeName)"
+                            :href="route(item.routeName)"
                             class="flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 group relative"
                             :class="isRouteActive(item.active) ? 'bg-white/15 text-white border border-white/10 shadow-sm' : 'text-purple-100/70 hover:bg-white/5 hover:text-white'"
                         >
