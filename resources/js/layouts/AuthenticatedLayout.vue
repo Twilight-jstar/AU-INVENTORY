@@ -90,9 +90,17 @@ const navigationGroups = [
 // Safety helpers for Ziggy routes
 const safeRoute = (name: string) => {
     try {
-        return route().has(name) ? route(name) : '#';
-    } catch (e) {
+        // If Ziggy knows the name, use it. 
+        // Otherwise, if it's 'items.index', try the hardcoded path.
+        if (route().has(name)) {
+            return route(name);
+        }
+        
+        if (name === 'items.index') return '/items';
+        
         return '#'; 
+    } catch (e) {
+        return name === 'items.index' ? '/items' : '#'; 
     }
 };
 
