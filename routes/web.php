@@ -1,15 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\{
-    ItemController,
-    CategoryController,
-    UnitController,
-    UserController,
-    TransactionController,
-    DashboardController,
-    ReportController
-};
+use App\Http\Controllers\ItemController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\UnitController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\DashboardController; 
+use App\Http\Controllers\ReportController;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -19,9 +17,12 @@ Route::middleware(['auth'])->group(function () {
     
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Items Management
+    // Items Management - Manually named to keep sidebar working
+    Route::get('items', [ItemController::class, 'index'])->name('items');
     Route::get('items/generate-code', [ItemController::class, 'generateProductCode'])->name('items.generate-code');
-    Route::resource('items', ItemController::class);
+    
+    // Using resource but excluding index since we named it above
+    Route::resource('items', ItemController::class)->except(['index']);
 
     // Helpers
     Route::resource('categories', CategoryController::class);
