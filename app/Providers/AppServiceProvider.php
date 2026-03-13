@@ -16,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
         // 1. Superuser: Admin
         // Using strtolower makes this "Admin" vs "admin" proof.
         Gate::before(function (User $user) {
-            if (strtolower($user->role) === 'Admin') {
+            if (strtolower($user->role) === 'admin') {
                 return true;
             }
         });
@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
         // 2. Manage Inventory (Create, Edit, Delete, Stock In/Out)
         Gate::define('manage-inventory', function (User $user) {
             $role = strtolower($user->role);
-            return in_array($role, ['Admin', 'Clerk', 'Custodian']);
+            return in_array($role, ['admin', 'clerk', 'custodian']);
         });
 
         // 3. User Management
@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
         // 4. View Only Access
         Gate::define('view-inventory', function (User $user) {
             $role = strtolower($user->role);
-            return in_array($role, ['Admin', 'Clerk', 'Custodian', 'Viewer']);
+            return in_array($role, ['admin', 'clerk', 'custodian', 'viewer']);
         });
     }
 }
