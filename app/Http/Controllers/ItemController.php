@@ -39,7 +39,8 @@ public function create()
 
 public function store(Request $request)
 {
-    Gate::authorize('manage-inventory');
+    // 1. Log to a file so we can see it even if the browser redirects
+    \Log::error('DEBUG: Store method reached!');
 
     $validator = \Validator::make($request->all(), [
         'product_code' => 'required|unique:items,product_code',
@@ -48,17 +49,17 @@ public function store(Request $request)
         'min_stock'    => 'required|numeric|min:0',
         'unit_id'      => 'nullable|exists:units,id',
         'category_id'  => 'nullable|exists:categories,id',
-        'description'  => 'nullable|string'
     ]);
 
     if ($validator->fails()) {
-        // This will stop the redirect and show the errors in the browser
-        dd('VALIDATION FAILED', $validator->errors()->toArray());
+        \Log::error('DEBUG: Validation Failed', $validator->errors()->toArray());
+        // This will force the browser to stay here and show the error JSON
+        return response()->json($validator->errors(), 422);
     }
 
     Item::create($validator->validated());
     
-    return redirect()->route('items')->with('success', 'Item created!');
+    return redirect()->route('items');
 }
 
 public function edit(Item $item)
