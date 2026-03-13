@@ -39,17 +39,26 @@ public function create()
 
 public function store(Request $request)
 {
-    // TEMPORARY TEST: Bypass everything
-    Item::create([
-        'product_code' => 'TEST-' . rand(1,999),
-        'name' => 'Test Item',
-        'quantity' => 1,
-        'min_stock' => 1,
-        'category_id' => 1,
-        'unit_id' => 1
+    Gate::authorize('manage-inventory');
+
+    $validator = \Validator::make($request->all(), [
+        'product_code' => 'required|unique:items,product_code',
+        'name'         => 'required|string|max:255',
+        'quantity'     => 'required|numeric|min:0',
+        'min_stock'    => 'required|numeric|min:0',
+        'unit_id'      => 'nullable|exists:units,id',
+        'category_id'  => 'nullable|exists:categories,id',
+        'description'  => 'nullable|string'
     ]);
+
+    if ($validator->fails()) {
+        // This will stop the redirect and show the errors in the browser
+        dd('VALIDATION FAILED', $validator->errors()->toArray());
+    }
+
+    Item::create($validator->validated());
     
-    return redirect('/items');
+    return redirect()->route('items')->with('success', 'Item created!');
 }
 
 public function edit(Item $item)
