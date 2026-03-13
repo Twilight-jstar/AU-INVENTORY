@@ -39,25 +39,17 @@ public function create()
 
 public function store(Request $request)
 {
-    Gate::authorize('manage-inventory');
-
-    // We use $request->validate() but we want to make sure it doesn't 
-    // just bounce us to the dashboard if it fails.
-    $validated = $request->validate([
-        'product_code' => 'required|unique:items,product_code',
-        'name'         => 'required|string|max:255',
-        'quantity'     => 'required|numeric|min:0',
-        'min_stock'    => 'required|numeric|min:0',
-        'unit_id'      => 'nullable|exists:units,id',
-        'category_id'  => 'nullable|exists:categories,id',
-        'description'  => 'nullable|string'
+    // TEMPORARY TEST: Bypass everything
+    Item::create([
+        'product_code' => 'TEST-' . rand(1,999),
+        'name' => 'Test Item',
+        'quantity' => 1,
+        'min_stock' => 1,
+        'category_id' => 1,
+        'unit_id' => 1
     ]);
-
-    // If it passes validation, it hits this line:
-    $item = Item::create($validated);
     
-    // Use a full path redirect to avoid "back()" confusion
-    return redirect('/items')->with('success', 'Item created!');
+    return redirect('/items');
 }
 
 public function edit(Item $item)
