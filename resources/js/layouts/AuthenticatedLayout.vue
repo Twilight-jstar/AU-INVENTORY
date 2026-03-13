@@ -19,7 +19,7 @@ import {
 } from 'lucide-vue-next';
 import { route } from 'ziggy-js';
 
-// 1. Define Types to fix the TypeScript "Property does not exist on type '{}'" errors
+// 1. Define Types for shared props
 interface FlashProps {
     success?: string;
     error?: string;
@@ -30,13 +30,13 @@ const isMobileMenuOpen = ref(false);
 const showUserMenu = ref(false); 
 const page = usePage();
 
-// Access shared props safely with type casting
+// Access shared props safely
 const flash = computed(() => page.props.flash as FlashProps);
 const userName = computed(() => page.props.auth.user?.name || 'Guest User');
 const userRole = computed(() => page.props.auth.user?.role || 'Viewer');
 
 // ============================================================
-// NOTIFICATION LOGIC (Success, Error, and Low Stock Warning)
+// NOTIFICATION LOGIC
 // ============================================================
 const showNotification = ref(false);
 
@@ -44,10 +44,9 @@ watch(() => page.props.flash as FlashProps, (newFlash) => {
     const hasFlash = newFlash && (newFlash.success || newFlash.error || newFlash.warning);
 
     if (hasFlash) {
-        showNotification.value = false; // Reset first
+        showNotification.value = false; 
         setTimeout(() => {
             showNotification.value = true;
-            // Auto-hide after 5 seconds
             setTimeout(() => {
                 showNotification.value = false;
             }, 5000);
@@ -56,7 +55,7 @@ watch(() => page.props.flash as FlashProps, (newFlash) => {
 }, { deep: true, immediate: true });
 
 // ============================================================
-// NAVIGATION & ZIGGY SAFETY (Prevents White Screen Crash)
+// NAVIGATION CONFIGURATION (Standardized with web.php)
 // ============================================================
 const navigationGroups = [
     {
@@ -68,7 +67,8 @@ const navigationGroups = [
     {
         label: 'Inventory Control',
         items: [
-            { name: 'Inventory Items', routeName: 'items', icon: Package, active: 'items.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
+            // Updated to items.index to match Resource Route
+            { name: 'Inventory Items', routeName: 'items.index', icon: Package, active: 'items.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
             { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['Admin', 'Clerk', 'Custodian'] },
             { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['Admin', 'Clerk', 'Custodian'] },
         ]
@@ -76,22 +76,20 @@ const navigationGroups = [
     {
         label: 'System Access',
         items: [
-            // Only 'Admin' can see this group
             { name: 'Manage Users', routeName: 'users.index', icon: User, active: 'users.*', roles: ['Admin'] },
         ]
     },
     {
         label: 'Activity Logs',
         items: [
-            { name: 'Stock In / Stock Out', routeName: 'transactions', icon: HistoryIcon, active: 'transactions.*', roles: ['Clerk', 'Custodian', 'Viewer'] },
+            { name: 'Stock In / Stock Out', routeName: 'transactions.index', icon: HistoryIcon, active: 'transactions.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
         ]
     }
 ];
 
-// Helper to prevent Ziggy crash if a route is not authorized/defined
+// Safety helpers for Ziggy routes
 const safeRoute = (name: string) => {
     try {
-        // Only attempt to resolve if Ziggy knows the route
         return route().has(name) ? route(name) : '#';
     } catch (e) {
         return '#'; 
@@ -138,7 +136,6 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
         
         <Transition name="fade-slide">
             <div v-if="showNotification" class="fixed top-6 right-6 z-[9999] max-w-md w-full flex flex-col gap-2 pointer-events-none">
-                
                 <div v-if="flash.success" class="pointer-events-auto bg-emerald-500 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3 border border-emerald-400">
                     <CircleCheck class="w-5 h-5 text-white shrink-0 mt-0.5" />
                     <div class="flex-1 text-sm font-bold">{{ flash.success }}</div>
@@ -195,14 +192,6 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
                 </div>
             </nav>
 
-            <div v-if="userRole !== 'Viewer'" class="mx-4 mb-4 px-3 py-2 bg-white/5 border border-white/5 rounded-xl">
-                <div class="flex items-center gap-1.5 mb-0.5">
-                    <ShieldAlert class="w-2.5 h-2.5 text-purple-400/80" />
-                    <span class="text-[8px] font-black text-purple-400/80 uppercase tracking-[0.15em]">System Live</span>
-                </div>
-                <p class="text-[9px] text-purple-100/40 leading-tight">Monitoring active logs.</p>
-            </div>
-
             <div class="p-4 user-menu-container border-t border-purple-800 bg-purple-950/30">
                 <div class="p-3 rounded-2xl flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer" @click.stop="showUserMenu = !showUserMenu">
                     <div class="flex items-center gap-3 overflow-hidden">
@@ -234,7 +223,6 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
         </aside>
 
         <main class="flex-1 relative z-10 flex flex-col h-screen overflow-hidden">
-            
             <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-10 overflow-hidden">
                 <img src="/images/bg.png" alt="ALF Watermark" class="w-[100%] md:w-[80%] h-auto object-contain">
             </div>
