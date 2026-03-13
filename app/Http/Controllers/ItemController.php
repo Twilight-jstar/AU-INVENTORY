@@ -54,7 +54,7 @@ public function store(Request $request)
 
     Item::create($validated);
     
-    return redirect()->route('items.index')->with('message', 'Item created successfully.');
+    return redirect()->route('items')->with('message', 'Item created successfully.');
 }
 
 public function edit(Item $item)
@@ -85,7 +85,7 @@ public function update(Request $request, Item $item)
 
     $item->update($validated);
 
-    return redirect()->route('items.index')->with('message', 'Item updated successfully.');
+    return redirect()->route('items')->with('message', 'Item updated successfully.');
 }
 
 public function destroy(Item $item)
@@ -93,7 +93,7 @@ public function destroy(Item $item)
     Gate::authorize('delete-inventory');
 
     $item->delete();
-    return redirect()->route('items.index')->with('message', 'Item deleted.');
+    return redirect()->route('items')->with('message', 'Item deleted.');
 }
 public function generateProductCode(Request $request)
 {
