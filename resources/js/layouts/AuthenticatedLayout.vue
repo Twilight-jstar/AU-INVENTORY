@@ -67,7 +67,7 @@ const navigationGroups = [
     {
         label: 'Inventory Control',
         items: [
-            // Using direct path '/items' to bypass Ziggy naming sync issues
+            // HARDCODED PATH: This bypasses all Ziggy/Naming errors
             { name: 'Inventory Items', routeName: '/items', icon: Package, active: 'items.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
             { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['Admin', 'Clerk', 'Custodian'] },
             { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['Admin', 'Clerk', 'Custodian'] },
@@ -89,23 +89,14 @@ const navigationGroups = [
 
 // Safety helpers for Ziggy routes
 const safeRoute = (nameOrPath: string) => {
+    // If it starts with a slash, it's already a working URL
+    if (nameOrPath.startsWith('/')) return nameOrPath;
+    
     try {
-        // 1. If it's an absolute path, return it directly
-        if (nameOrPath.startsWith('/')) {
-            return nameOrPath;
-        }
-
-        // 2. If it's a route name Ziggy knows, use it
-        if (route().has(nameOrPath)) {
-            return route(nameOrPath);
-        }
-        
-        // 3. Fallback for the items page specifically
-        if (nameOrPath === 'items.index') return '/items';
-        
+        if (route().has(nameOrPath)) return route(nameOrPath);
         return '#'; 
     } catch (e) {
-        return nameOrPath.includes('items') ? '/items' : '#'; 
+        return '#'; 
     }
 };
 
@@ -178,7 +169,7 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
                         </div>
                         <span class="font-bold tracking-tight text-xl uppercase">ALF Inventory</span>
                     </div>
-                    <p class="text-[9px] text-purple-300/50 font-black uppercase tracking-[0.25em] mt-2">Management System v2.0</p>
+                    <p class="text-[9px] text-purple-300/50 font-black uppercase tracking-[0.2em] mt-2">Management System v2.0</p>
                 </div>
             </div>
 
@@ -264,15 +255,3 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
         </main>
     </div>
 </template>
-
-<style scoped>
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-.pop-enter-active { transition: all 0.3s ease-out; }
-.pop-leave-active { transition: all 0.2s ease-in; }
-.pop-enter-from, .pop-leave-to { opacity: 0; transform: translateY(10px) scale(0.95); }
-
-.fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-.fade-slide-enter-from, .fade-slide-leave-to { opacity: 0; transform: translateY(-20px) translateX(20px); }
-</style>
