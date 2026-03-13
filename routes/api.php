@@ -23,5 +23,7 @@ use App\Http\Controllers\Api\v1\AuthController;
 // 1. Public Auth Route
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::apiResource('items', ItemController::class);
-Route::apiResource('transactions', TransactionController::class);
+Route::prefix('v1')->group(function () {
+    Route::apiResource('items', ItemController::class);
+    Route::apiResource('transactions', TransactionController::class);
+});
