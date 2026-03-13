@@ -13,7 +13,7 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 })->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     
     // ==========================================
     // 1. SHARED ACCESS (All Roles)
