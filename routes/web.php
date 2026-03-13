@@ -1,31 +1,23 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ItemController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\UnitController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\DashboardController; 
-use App\Http\Controllers\ReportController;
+use App\Http\Controllers\{ItemController, CategoryController, UnitController, UserController, TransactionController, DashboardController, ReportController};
 
-Route::get('/', function () {
-    return redirect()->route('dashboard');
-})->name('home');
+Route::get('/', fn() => redirect()->route('dashboard'))->name('home');
 
 Route::middleware(['auth'])->group(function () {
-    
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Items Management
     Route::get('items/generate-code', [ItemController::class, 'generateProductCode'])->name('items.generate-code');
     Route::resource('items', ItemController::class); 
 
     Route::resource('categories', CategoryController::class);
     Route::resource('units', UnitController::class);
     
+    // Transactions - Grouped for clear naming
     Route::group(['prefix' => 'transactions', 'as' => 'transactions.'], function () {
         Route::get('/', [TransactionController::class, 'index'])->name('index'); 
-        
         Route::get('stock-in', [TransactionController::class, 'stockIn'])->name('stock-in');
         Route::post('stock-in/bulk', [TransactionController::class, 'store_bulk_in'])->name('store_bulk_in');
         Route::get('stock-out', [TransactionController::class, 'stockOut'])->name('stock-out');
