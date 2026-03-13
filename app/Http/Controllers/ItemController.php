@@ -42,7 +42,8 @@ public function store(Request $request)
 {
     Gate::authorize('manage-inventory');
 
-    $validated = $request->validate([
+    // 1. Manually check validation to catch errors before they redirect
+    $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
         'product_code' => 'required|unique:items,product_code',
         'name'         => 'required|string|max:255',
         'quantity'     => 'required|numeric|min:0',
@@ -52,11 +53,19 @@ public function store(Request $request)
         'description'  => 'nullable|string'
     ]);
 
-    Item::create($validated);
-    
-    return redirect()->route('items')->with('message', 'Item created successfully.');
-}
+    if ($validator->fails()) {
+        // This STOPS the dashboard redirect and shows you the validation errors
+        dd($validator->errors()->all()); 
+    }
 
+    try {
+        Item::create($validator->validated());
+        return redirect()->route('items')->with('message', 'Success!');
+    } catch (\Exception $e) {
+        // This STOPS the dashboard redirect and shows you the Database error
+        dd($e->getMessage()); 
+    }
+}
 public function edit(Item $item)
 {
     Gate::authorize('manage-inventory');
