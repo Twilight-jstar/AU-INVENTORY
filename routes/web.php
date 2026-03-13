@@ -17,17 +17,13 @@ Route::middleware(['auth'])->group(function () {
     
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Items Management
     Route::get('items/generate-code', [ItemController::class, 'generateProductCode'])->name('items.generate-code');
-    // Standard resource (creates items.index)
     Route::resource('items', ItemController::class); 
 
     Route::resource('categories', CategoryController::class);
     Route::resource('units', UnitController::class);
     
-    // Transactions - Fixed for clarity
     Route::group(['prefix' => 'transactions', 'as' => 'transactions.'], function () {
-        // This ensures the name is definitely 'transactions.index'
         Route::get('/', [TransactionController::class, 'index'])->name('index'); 
         
         Route::get('stock-in', [TransactionController::class, 'stockIn'])->name('stock-in');

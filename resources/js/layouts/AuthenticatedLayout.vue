@@ -30,7 +30,6 @@ const flash = computed(() => page.props.flash as FlashProps);
 const userName = computed(() => page.props.auth.user?.name || 'Guest User');
 const userRole = computed(() => page.props.auth.user?.role || 'Viewer');
 
-// Notification Logic
 const showNotification = ref(false);
 watch(() => page.props.flash as FlashProps, (newFlash) => {
     if (newFlash?.success || newFlash?.error || newFlash?.warning) {
@@ -39,9 +38,6 @@ watch(() => page.props.flash as FlashProps, (newFlash) => {
     }
 }, { deep: true });
 
-// ============================================================
-// UPDATED NAVIGATION: Using direct paths for troublesome routes
-// ============================================================
 const navigationGroups = [
     {
         label: 'Analytics',
@@ -52,7 +48,6 @@ const navigationGroups = [
     {
         label: 'Inventory Control',
         items: [
-            // Use absolute path to ensure browser always goes to /items
             { name: 'Inventory Items', routeName: '/items', icon: Package, active: 'items.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
             { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['Admin', 'Clerk', 'Custodian'] },
             { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['Admin', 'Clerk', 'Custodian'] },
@@ -67,7 +62,6 @@ const navigationGroups = [
     {
         label: 'Activity Logs',
         items: [
-            // Use absolute path for transactions
             { name: 'Stock In / Stock Out', routeName: '/transactions', icon: HistoryIcon, active: 'transactions.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
         ]
     }
@@ -107,7 +101,6 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
 
 <template>
     <div class="min-h-screen flex flex-col md:flex-row relative bg-slate-50">
-        
         <Transition name="fade-slide">
             <div v-if="showNotification" class="fixed top-6 right-6 z-[9999] max-w-md w-full flex flex-col gap-2 pointer-events-none">
                 <div v-if="flash.success" class="pointer-events-auto bg-emerald-500 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3">
@@ -115,7 +108,12 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
                     <div class="flex-1 text-sm font-bold">{{ flash.success }}</div>
                     <button @click="showNotification = false"><X class="w-4 h-4" /></button>
                 </div>
+                <div v-if="flash.error" class="pointer-events-auto bg-rose-500 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3">
+                    <CircleAlert class="w-5 h-5 shrink-0 mt-0.5" />
+                    <div class="flex-1 text-sm font-bold">{{ flash.error }}</div>
+                    <button @click="showNotification = false"><X class="w-4 h-4" /></button>
                 </div>
+            </div>
         </Transition>
 
         <aside class="hidden md:flex flex-col w-64 bg-purple-900 sticky top-0 h-screen z-20 shadow-2xl border-r border-purple-800">
