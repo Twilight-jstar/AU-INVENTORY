@@ -37,7 +37,7 @@ const navigationGroups = [
     {
         label: 'Inventory Control',
         items: [
-            { name: 'Inventory Items', routeName: 'items.index', icon: Package, active: 'items.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
+            { name: 'Inventory Items', routeName: '/items', icon: Package, active: 'items.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
             { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['admin', 'clerk', 'custodian'] },
             { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['admin', 'clerk', 'custodian'] },
         ]

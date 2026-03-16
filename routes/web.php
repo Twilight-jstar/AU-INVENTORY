@@ -9,7 +9,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('items/generate-code', [ItemController::class, 'generateProductCode'])->name('items.generate-code');
-    Route::resource('items', ItemController::class); 
+    Route::resource('items', ItemController::class)->names('web.items'); 
 
     Route::resource('categories', CategoryController::class);
     Route::resource('units', UnitController::class);
