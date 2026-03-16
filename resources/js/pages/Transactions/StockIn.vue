@@ -22,8 +22,7 @@ const addItemRow = () => form.line_items.push({ item_id: '', quantity: 1, unit_c
 const removeItemRow = (index) => form.line_items.length > 1 && form.line_items.splice(index, 1);
 
 const triggerExport = () => {
-    const url = route('transactions.export-daily-in', { date: submittedDate.value });
-    window.open(url, '_blank');
+    window.open(route('web.transactions.export-daily-in', { date: submittedDate.value }), '_blank');
 };
 
 const resetForm = () => {
@@ -32,7 +31,7 @@ const resetForm = () => {
 };
 
 const submit = () => {
-    form.post(route('transactions.store_bulk_in'), {
+    form.post(route('web.transactions.store-in'), {
         onBefore: () => { submittedDate.value = form.date_received; },
         onSuccess: () => { recentlySubmitted.value = true; },
     });
@@ -44,14 +43,10 @@ const submit = () => {
     <AuthenticatedLayout>
         <div class="max-w-6xl mx-auto space-y-8 p-2 py-8">
             <div class="flex items-center gap-4 border-b border-slate-200 pb-6">
-                <Link :href="route('transactions')" class="p-2 bg-white ring-1 ring-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-all">
-                    <ArrowLeft class="w-4 h-4" />
-                </Link>
+                <Link :href="route('web.transactions.index')" class="p-2 bg-white ring-1 ring-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-all"><ArrowLeft class="w-4 h-4" /></Link>
                 <div>
                     <h1 class="text-2xl font-bold text-slate-900 tracking-tight uppercase">STOCK IN</h1>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">
-                        Reference Date: {{ generatedRefNo }}
-                    </p>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Reference Date: {{ generatedRefNo }}</p>
                 </div>
             </div>
 
@@ -95,40 +90,23 @@ const submit = () => {
                                         <option v-for="item in items" :key="item.id" :value="item.id">{{ item.name }}</option>
                                     </select>
                                 </td>
-                                <td class="px-4 py-3 border-l border-slate-50">
-                                    <input v-model="line.quantity" type="number" step="0.1" class="w-full border-none text-center h-9 ring-1 ring-slate-100 rounded-sm focus:ring-slate-900" required :disabled="recentlySubmitted" />
-                                </td>
-                                <td class="px-4 py-3 border-l border-slate-50">
-                                    <input v-model="line.unit_cost" type="number" step="0.01" class="w-full border-none text-left h-9 ring-1 ring-slate-100 rounded-sm focus:ring-slate-900" :disabled="recentlySubmitted" />
-                                </td>
-                                <td class="px-2 py-3 text-center">
-                                    <button v-if="!recentlySubmitted" @click="removeItemRow(index)" type="button" class="text-slate-300 hover:text-red-500 transition-colors">
-                                        <Trash2 class="w-4 h-4" />
-                                    </button>
-                                </td>
+                                <td class="px-4 py-3 border-l border-slate-50"><input v-model="line.quantity" type="number" step="0.1" class="w-full border-none text-center h-9 ring-1 ring-slate-100 rounded-sm focus:ring-slate-900" required :disabled="recentlySubmitted" /></td>
+                                <td class="px-4 py-3 border-l border-slate-50"><input v-model="line.unit_cost" type="number" step="0.01" class="w-full border-none text-left h-9 ring-1 ring-slate-100 rounded-sm focus:ring-slate-900" :disabled="recentlySubmitted" /></td>
+                                <td class="px-2 py-3 text-center"><button v-if="!recentlySubmitted" @click="removeItemRow(index)" type="button" class="text-slate-300 hover:text-red-500 transition-colors"><Trash2 class="w-4 h-4" /></button></td>
                             </tr>
                         </tbody>
                     </table>
                     <div v-if="!recentlySubmitted" class="p-3 bg-slate-50 border-t border-slate-100 flex justify-center mt-2">
-                        <button @click="addItemRow" type="button" class="text-[10px] font-bold text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2 hover:text-indigo-900 transition-all">
-                            <Plus class="w-3 h-3" /> Add Item Row
-                        </button>
+                        <button @click="addItemRow" type="button" class="text-[10px] font-bold text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2 hover:text-indigo-900 transition-all"><Plus class="w-3 h-3" /> Add Item Row</button>
                     </div>
                 </Card>
 
                 <div class="flex justify-end pt-4">
                     <div v-if="recentlySubmitted" class="flex gap-3">
-                        <button @click="triggerExport" type="button" class="inline-flex items-center px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-sm shadow-sm transition-all uppercase tracking-[0.2em]">
-                            <Download class="w-4 h-4 mr-3" /> Download Inbound PDF
-                        </button>
-                        <button @click="resetForm" type="button" class="inline-flex items-center px-8 py-4 bg-white ring-1 ring-slate-200 text-slate-600 text-[10px] font-bold rounded-sm hover:bg-slate-50 transition-all uppercase tracking-[0.2em]">
-                            <RefreshCw class="w-4 h-4 mr-3" /> New Entry
-                        </button>
+                        <button @click="triggerExport" type="button" class="inline-flex items-center px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-sm uppercase tracking-[0.2em]"><Download class="w-4 h-4 mr-3" /> Download Inbound PDF</button>
+                        <button @click="resetForm" type="button" class="inline-flex items-center px-8 py-4 bg-white ring-1 ring-slate-200 text-slate-600 text-[10px] font-bold rounded-sm hover:bg-slate-50 uppercase tracking-[0.2em]"><RefreshCw class="w-4 h-4 mr-3" /> New Entry</button>
                     </div>
-                    <button v-else type="submit" :disabled="form.processing" class="inline-flex items-center px-10 py-4 bg-slate-900 hover:bg-black text-white text-[10px] font-bold rounded-sm shadow-sm transition-all uppercase tracking-[0.2em] disabled:opacity-50">
-                        <Save class="w-4 h-4 mr-3 text-indigo-400" />
-                        {{ form.processing ? 'Saving...' : 'Save Inbound Entry' }}
-                    </button>
+                    <button v-else type="submit" :disabled="form.processing" class="inline-flex items-center px-10 py-4 bg-slate-900 hover:bg-black text-white text-[10px] font-bold rounded-sm uppercase tracking-[0.2em] disabled:opacity-50"><Save class="w-4 h-4 mr-3 text-indigo-400" /> {{ form.processing ? 'Saving...' : 'Save Inbound Entry' }}</button>
                 </div>
             </form>
         </div>

@@ -49,7 +49,7 @@ const navigationGroups = [
     {
         label: 'Activity Logs',
         items: [
-            { name: 'Stock In / Stock Out', routeName: 'transactions.index', icon: HistoryIcon, active: 'transactions.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
+            { name: 'Stock In / Stock Out', routeName: 'web.transactions.index', icon: HistoryIcon, active: 'transactions.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
         ]
     }
 ];

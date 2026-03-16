@@ -19,7 +19,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('units', UnitController::class);
     
     // Transactions Group
-    Route::group(['prefix' => 'transactions', 'as' => 'transactions.'], function () {
+    Route::group(['prefix' => 'transactions', 'as' => 'web.transactions.'], function () {
         Route::get('/', [TransactionController::class, 'index'])->name('index'); 
         Route::get('stock-in', [TransactionController::class, 'stockIn'])->name('stock-in');
         Route::post('stock-in/bulk', [TransactionController::class, 'store_bulk_in'])->name('store_bulk_in');
