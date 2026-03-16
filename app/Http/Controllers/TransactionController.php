@@ -91,9 +91,10 @@ class TransactionController extends Controller
             'line_items.*.quantity' => 'required|numeric|min:0.1',
         ]);
 
+        $refNo = \Carbon\Carbon::parse($request->date_received)->format('Y-m-d');
         $lastId = null;
 
-        DB::transaction(function () use ($request, &$lastId) {
+        DB::transaction(function () use ($request, $refNo, &$lastId) {
             foreach ($request->line_items as $itemData) {
                 $record = StockIn::create([
                     'item_id' => $itemData['item_id'],
@@ -101,7 +102,7 @@ class TransactionController extends Controller
                     'supplier_name' => $request->supplier_name,
                     'date_received' => $request->date_received,
                     'received_by' => Auth::user()->name,
-                    'ref_no' => 'IN-' . now()->format('ymd') . '-' . str_pad($itemData['item_id'], 4, '0', STR_PAD_LEFT),
+                    'ref_no' => $refNo, 
                 ]);
                 $lastId = $record->id;
                 Item::findOrFail($itemData['item_id'])->increment('quantity', $itemData['quantity']);
@@ -125,13 +126,13 @@ class TransactionController extends Controller
             'line_items.*.quantity' => 'required|numeric|min:0.1',
         ]);
 
+        $refNo = \Carbon\Carbon::parse($request->date_released)->format('Y-m-d');
         $lowStockItems = [];
         $lastId = null;
 
         try {
-            DB::transaction(function () use ($request, &$lowStockItems, &$lastId) {
+            DB::transaction(function () use ($request, $refNo, &$lowStockItems, &$lastId) {
                 foreach ($request->line_items as $itemData) {
-                    // Lock row para iwas race condition
                     $item = Item::lockForUpdate()->findOrFail($itemData['item_id']);
 
                     if ($item->quantity < $itemData['quantity']) {
@@ -146,13 +147,12 @@ class TransactionController extends Controller
                         'released_by' => Auth::user()->name,
                         'released_to' => $request->released_to,
                         'purpose' => $request->purpose ?? 'Standard Issuance',
-                        'ref_no' => 'OUT-' . now()->format('ymd') . '-' . str_pad($item->id, 4, '0', STR_PAD_LEFT),
+                        'ref_no' => $refNo, 
                     ]);
                     
                     $lastId = $record->id;
                     $item->decrement('quantity', $itemData['quantity']);
 
-                    // Threshold Check (Warning)
                     $threshold = ($item->min_stock > 0) ? $item->min_stock : 10;
                     if ($item->refresh()->quantity <= $threshold) {
                         $lowStockItems[] = "{$item->name} ({$item->quantity} left)";
@@ -160,8 +160,7 @@ class TransactionController extends Controller
                 }
             });
         } catch (\Exception $e) {
-            // Sinama ang withInput para hindi mawala ang data sa form
-            return back()->withErrors(['error' => $e->getMessage()])->withInput();
+            return back()->withErrors(['error' => $e->getMessage()]);
         }
 
         $payload = ['success' => 'Stock Out recorded.', 'export_id' => 'out-' . $lastId];
