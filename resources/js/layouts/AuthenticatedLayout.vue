@@ -34,7 +34,6 @@ const navigationGroups = [
     {
         label: 'Inventory Control',
         items: [
-            // In-update para tumugma sa .names('web.items') sa web.php
             { name: 'Inventory Items', routeName: 'web.items.index', icon: Package, active: 'web.items.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
             { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['admin', 'clerk', 'custodian'] },
             { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['admin', 'clerk', 'custodian'] },
@@ -49,7 +48,8 @@ const navigationGroups = [
     {
         label: 'Activity Logs',
         items: [
-            { name: 'Stock In / Stock Out', routeName: 'web.transactions.index', icon: HistoryIcon, active: 'web.transactions.*', roles: ['clerk', 'custodian', 'viewer'] },
+            // BAGO: Inayos ang pangalan ng route na ginagamit at tinanggal ang 'viewer' role
+            { name: 'Stock In / Stock Out', routeName: 'web.transactions.index', icon: HistoryIcon, active: 'web.transactions.*', roles: ['admin', 'clerk', 'custodian'] },
         ]
     }
 ];
@@ -133,7 +133,9 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
             <div class="p-4 user-menu-container border-t border-purple-800 bg-purple-950/30">
                 <div class="p-3 rounded-2xl flex items-center justify-between hover:bg-white/5 cursor-pointer" @click.stop="showUserMenu = !showUserMenu">
                     <div class="flex items-center gap-3">
-                        <div class="shrink-0 w-8 h-8 rounded-lg bg-purple-700 flex items-center justify-center text-purple-100"><User class="w-4 h-4" /></div>
+                        <div class="shrink-0 w-8 h-8 rounded-lg bg-purple-700 flex items-center justify-center text-purple-100">
+                            <User class="w-4 h-4" />
+                        </div>
                         <div class="flex flex-col overflow-hidden text-white">
                             <span class="text-xs font-bold truncate">{{ userName }}</span>
                             <span class="text-[9px] text-purple-300/60 font-black uppercase tracking-widest">{{ userRole }}</span>

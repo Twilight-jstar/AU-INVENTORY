@@ -14,6 +14,8 @@ class ReportController extends Controller
      */
     public function download(Request $request)
     {
+        $fileName = 'ALF_Inventory_Report_' . date('Y-m-d_His') . '.xls';
+        
         $items = Item::with(['category', 'unit'])->get();
 
         // API Support: If the client just wants the data in JSON format
@@ -48,6 +50,54 @@ class ReportController extends Controller
 
         $callback = function() use($items) {
             $logoUrl = asset('images/ALF Logo 2022.png');
+
+            echo '<table border="1" style="font-family: Arial, sans-serif;">';
+            
+            // Nagdagdag tayo ng konting space sa taas para kamukha nung nasa example mo
+            echo '<tr><td colspan="7"></td></tr>';
+            echo '<tr><td colspan="7"></td></tr>';
+            
+            // ==========================================
+            // HEADER NA MAY SIDE-BY-SIDE LOGO (ROWSPAN TRICK)
+            // ==========================================
+            echo '<tr>';
+            // COLUMN A: Dito ang Logo, naka-rowspan="2" para umabot sa 2 lines pababa
+            echo '<th rowspan="2" style="text-align: center; vertical-align: middle; width: 80px;">';
+            echo '<img src="' . $logoUrl . '" width="65" height="65" alt="ALF Logo">';
+            echo '</th>';
+            
+            // COLUMNS B to G: Unang linya ng text (colspan="6" dahil kinuha na ng logo ang 1st col)
+            echo '<th colspan="6" style="text-align: center; font-size: 22px; font-weight: bold; vertical-align: bottom;">ARELLANO UNIVERSITY - SCHOOL OF LAW</th>';
+            echo '</tr>';
+            
+            echo '<tr>';
+            // COLUMNS B to G: Pangalawang linya ng text
+            echo '<th colspan="6" style="text-align: center; font-size: 16px; font-weight: bold; vertical-align: top;">ALF Inventory Management System</th>';
+            echo '</tr>';
+
+            echo '<tr><td colspan="7"></td></tr>'; 
+            
+            echo '<tr>';
+            echo '<td colspan="7" style="font-weight: bold; font-size: 14px;">OFFICIAL INVENTORY REPORT</td>';
+            echo '</tr>';
+
+            echo '<tr>';
+            echo '<td colspan="2">Date Generated:</td>';
+            echo '<td colspan="5">' . date('M d, Y h:i A') . '</td>';
+            echo '</tr>';
+
+            echo '<tr><td colspan="7"></td></tr>'; 
+            
+            // --- COLUMN HEADERS ---
+            echo '<tr style="background-color: #f2f2f2; font-weight: bold; text-align: center;">';
+            echo '<td>Product Code</td>';
+            echo '<td>Item Name</td>';
+            echo '<td>Category</td>';
+            echo '<td>Current Stock</td>';
+            echo '<td>Min Stock</td>';
+            echo '<td>Unit</td>';
+            echo '<td>Status</td>';
+            echo '</tr>';
 
             echo '<table border="1" style="font-family: Arial, sans-serif;">';
             echo '<tr><td colspan="7"></td></tr>';
@@ -103,14 +153,32 @@ class ReportController extends Controller
                 echo '</tr>';
             }
 
-            // FOOTER SIGNATORIES
+            // --- SIGNATORY FOOTER ---
             echo '<tr><td colspan="7"></td></tr>'; 
             echo '<tr><td colspan="7"></td></tr>'; 
-            echo '<tr><td>Prepared By:</td><td colspan="6">____________________</td></tr>';
-            echo '<tr><td>Date Signed:</td><td colspan="6">____________________</td></tr>';
-            echo '<tr><td colspan="7"></td></tr>'; 
-            echo '<tr><td style="vertical-align: bottom; height: 35px;">Noted By:</td><td colspan="6" style="vertical-align: bottom;">____________________</td></tr>';
-            echo '<tr><td></td><td colspan="6" style="vertical-align: top;">(School Head / Property Custodian)</td></tr>';
+
+            echo '<tr>';
+            echo '<td>Prepared By:</td>';
+            echo '<td colspan="6">____________________</td>';
+            echo '</tr>';
+
+            echo '<tr>';
+            echo '<td>Date Signed:</td>';
+            echo '<td colspan="6">____________________</td>';
+            echo '</tr>';
+
+            // --- INAYOS NA NOTED BY SECTION ---
+            echo '<tr><td colspan="7"></td></tr>'; // Dagdag na blank space sa taas ng Noted By
+
+            echo '<tr>';
+            echo '<td style="vertical-align: bottom; height: 35px;">Noted By:</td>';
+            echo '<td colspan="6" style="vertical-align: bottom;">____________________</td>';
+            echo '</tr>';
+
+            echo '<tr>';
+            echo '<td></td>'; // Blangko sa ilalim ng "Noted By:"
+            echo '<td colspan="6" style="vertical-align: top;">(School Head / Property Custodian)</td>';
+            echo '</tr>';
 
             echo '</table>';
         };
