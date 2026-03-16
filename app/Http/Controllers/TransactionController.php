@@ -11,13 +11,12 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class TransactionController extends Controller
 {
     /**
-     * Optimized Index with Pagination and Limited Columns
+     * Optimized Index: Pinagsamang History ng In at Out
      */
     public function index()
     {
-        // Query Optimization: Kumuha lang ng kailangang columns at limitahan ang records
         $stockIn = StockIn::with(['item:id,name,category_id', 'item.category:id,name'])
-            ->select('id', 'ref_no', 'item_id', 'quantity', 'received_by', 'supplier_name', 'created_at')
+            ->select('id', 'ref_no', 'item_id', 'quantity', 'received_by', 'supplier_name', 'date_received', 'created_at')
             ->latest()
             ->limit(100)
             ->get()
@@ -36,7 +35,7 @@ class TransactionController extends Controller
             ]);
 
         $stockOut = StockOut::with(['item:id,name,category_id', 'item.category:id,name'])
-            ->select('id', 'ref_no', 'item_id', 'quantity', 'department', 'released_to', 'released_by', 'purpose', 'created_at')
+            ->select('id', 'ref_no', 'item_id', 'quantity', 'department', 'released_to', 'released_by', 'purpose', 'date_released', 'created_at')
             ->latest()
             ->limit(100)
             ->get()
@@ -75,11 +74,14 @@ class TransactionController extends Controller
     public function stockOut()
     {
         return Inertia::render('Transactions/StockOut', [
-            'items' => Item::where('quantity', '>', 0)->orderBy('name')->get(['id', 'name', 'quantity', 'product_code']),
+            'items' => Item::where('quantity', '>', 0)->orderBy('name')->get(['id', 'name', 'quantity', 'min_stock', 'product_code']),
             'departments' => Department::where('is_active', true)->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
+    /**
+     * Bulk Stock In Logic
+     */
     public function store_bulk_in(Request $request)
     {
         $request->validate([
@@ -110,7 +112,7 @@ class TransactionController extends Controller
     }
 
     /**
-     * Stock Out with Critical Validation
+     * Bulk Stock Out with Critical Validation (Locking & Low Stock Warning)
      */
     public function store_bulk_out(Request $request)
     {
@@ -129,7 +131,7 @@ class TransactionController extends Controller
         try {
             DB::transaction(function () use ($request, &$lowStockItems, &$lastId) {
                 foreach ($request->line_items as $itemData) {
-                    // Critical Validation: Lock row for update and check stock
+                    // Lock row para iwas race condition
                     $item = Item::lockForUpdate()->findOrFail($itemData['item_id']);
 
                     if ($item->quantity < $itemData['quantity']) {
@@ -150,7 +152,7 @@ class TransactionController extends Controller
                     $lastId = $record->id;
                     $item->decrement('quantity', $itemData['quantity']);
 
-                    // Threshold Check
+                    // Threshold Check (Warning)
                     $threshold = ($item->min_stock > 0) ? $item->min_stock : 10;
                     if ($item->refresh()->quantity <= $threshold) {
                         $lowStockItems[] = "{$item->name} ({$item->quantity} left)";
@@ -158,7 +160,8 @@ class TransactionController extends Controller
                 }
             });
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => $e->getMessage()]);
+            // Sinama ang withInput para hindi mawala ang data sa form
+            return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
 
         $payload = ['success' => 'Stock Out recorded.', 'export_id' => 'out-' . $lastId];
@@ -170,7 +173,7 @@ class TransactionController extends Controller
     }
 
     /**
-     * DRY PDF Generator Helper
+     * Helper para sa PDF Generation (DRY approach)
      */
     private function generatePdfReport($transactions, $title, $receiver = null, $date = null)
     {
@@ -184,6 +187,9 @@ class TransactionController extends Controller
         ])->setPaper('letter', 'portrait');
     }
 
+    /**
+     * Export lahat ng Stock In sa isang partikular na araw
+     */
     public function exportDailyIn(Request $request)
     {
         $request->validate(['date' => 'required|date']);
@@ -202,12 +208,23 @@ class TransactionController extends Controller
         return $pdf ? $pdf->stream("Daily-In-{$request->date}.pdf") : back()->with('error', 'No records found.');
     }
 
+    /**
+     * Export lahat ng release para sa isang Department sa isang specific date
+     */
     public function exportByDepartment(Request $request)
     {
-        $request->validate(['department' => 'required|string']);
+        $request->validate([
+            'department' => 'required|string',
+            'date' => 'nullable|date' // Added date for more specific bulk export
+        ]);
         
-        $transactions = StockOut::where('department', $request->department)
-            ->with(['item.unit'])->get()->map(fn($trx) => (object)[
+        $query = StockOut::where('department', $request->department);
+        
+        if ($request->date) {
+            $query->whereDate('date_released', $request->date);
+        }
+
+        $transactions = $query->with(['item.unit'])->get()->map(fn($trx) => (object)[
                 'ref_no' => $trx->ref_no,
                 'date' => $trx->date_released,
                 'total_quantity' => $trx->quantity, 
@@ -224,6 +241,9 @@ class TransactionController extends Controller
         return $pdf->stream("Dept-{$request->department}.pdf");
     }
 
+    /**
+     * Single PDF Export (ginagamit ng Dashboard/History)
+     */
     public function exportPdf($id)
     {
         $type = str_starts_with($id, 'in-') ? 'in' : 'out';
