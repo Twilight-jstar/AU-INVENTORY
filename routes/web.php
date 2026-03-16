@@ -20,12 +20,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ==========================================
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('items', [ItemController::class, 'index'])->name('items.index');
-    Route::get('transactions', [TransactionController::class, 'index'])->name('transactions.index');
+    
+    // BAGO: TINANGGAL NA DITO YUNG TRANSACTIONS ROUTE PARA DI MA-ACCESS NG VIEWER
 
     // ==========================================
     // 2. INVENTORY OPERATIONS (Admin, Clerk, Custodian)
     // ==========================================
     Route::middleware('can:manage-inventory')->group(function () {
+
+        // BAGO: NILIPAT DITO YUNG TRANSACTIONS ROUTE 
+        // Para ang may access lang dito ay yung mga may 'manage-inventory' permission
+        Route::get('transactions', [TransactionController::class, 'index'])->name('transactions.index');
 
         // --- ITEM MANAGEMENT ---
         // Static routes first to avoid 404s
