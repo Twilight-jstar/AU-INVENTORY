@@ -12,13 +12,10 @@ interface FlashProps { success?: string; error?: string; warning?: string; }
 const showUserMenu = ref(false); 
 const page = usePage();
 
-// Computed properties for auth and flash data
 const flash = computed(() => page.props.flash as FlashProps);
 const userName = computed(() => page.props.auth.user?.name || 'Guest User');
-// Standardize userRole to lowercase immediately for easier matching
 const userRole = computed(() => (page.props.auth.user?.role as string)?.toLowerCase() || 'viewer');
 
-// Reactive Notification Logic
 const showNotification = ref(false);
 watch(() => page.props.flash as FlashProps, (newFlash) => {
     if (newFlash?.success || newFlash?.error || newFlash?.warning) {
@@ -37,6 +34,7 @@ const navigationGroups = [
     {
         label: 'Inventory Control',
         items: [
+            // In-update para tumugma sa .names('web.items') sa web.php
             { name: 'Inventory Items', routeName: 'web.items.index', icon: Package, active: 'web.items.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
             { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['admin', 'clerk', 'custodian'] },
             { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['admin', 'clerk', 'custodian'] },
@@ -67,10 +65,7 @@ const isRouteActive = (activePattern: string) => {
 const filteredGroups = computed(() => {
     return navigationGroups.map(group => ({
         ...group,
-        items: group.items.filter(item => {
-            // Check if user's lowercase role exists in the item's role array
-            return item.roles.includes(userRole.value);
-        })
+        items: group.items.filter(item => item.roles.includes(userRole.value))
     })).filter(group => group.items.length > 0);
 });
 
@@ -123,12 +118,13 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
                         <Link 
                             v-for="item in group.items" 
                             :key="item.name"
-                            :href="route(item.routeName)"
+                            :href="route().has(item.routeName) ? route(item.routeName) : '#'"
                             class="flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 group relative"
                             :class="isRouteActive(item.active) ? 'bg-white/15 text-white border border-white/10 shadow-sm' : 'text-purple-100/70 hover:bg-white/5 hover:text-white'"
                         >
                             <component :is="item.icon" class="w-4 h-4 opacity-70 group-hover:opacity-100" />
                             {{ item.name }}
+                            <div v-if="isRouteActive(item.active)" class="absolute right-2 w-1.5 h-1.5 rounded-full bg-purple-300"></div>
                         </Link>
                     </div>
                 </div>
