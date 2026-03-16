@@ -34,7 +34,6 @@ const navigationGroups = [
     {
         label: 'Inventory Control',
         items: [
-            // In-update para tumugma sa .names('web.items') sa web.php
             { name: 'Inventory Items', routeName: 'web.items.index', icon: Package, active: 'web.items.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
             { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['admin', 'clerk', 'custodian'] },
             { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['admin', 'clerk', 'custodian'] },
@@ -49,7 +48,8 @@ const navigationGroups = [
     {
         label: 'Activity Logs',
         items: [
-            { name: 'Stock In / Stock Out', routeName: 'web.transactions.index', icon: HistoryIcon, active: 'web.transactions.*', roles: ['clerk', 'custodian', 'viewer'] },
+            // BAGO: Inayos ang routeName sa 'web.transactions.index' at idinagdag ang 'viewer' at 'admin' sa roles
+            { name: 'Stock In / Stock Out', routeName: 'web.transactions.index', icon: HistoryIcon, active: 'web.transactions.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
         ]
     }
 ];

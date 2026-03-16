@@ -1,11 +1,16 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Link, Head } from '@inertiajs/vue3';
+// BAGO: Dinagdag ang usePage sa import para makuha ang role
+import { Link, Head, usePage } from '@inertiajs/vue3'; 
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue';
 import Card from '@/components/ui/card/Card.vue';
 import { 
     History, Download, Eye, PackagePlus, PackageMinus, XCircle, User, Building2, Box, Calendar, Filter, ArrowUpDown
 } from 'lucide-vue-next';
+
+// BAGO: Kinuha ang userRole para magamit pang-hide ng buttons
+const page = usePage();
+const userRole = computed(() => (page.props.auth.user?.role || 'Viewer').toLowerCase());
 
 const props = defineProps({ 
     transactions: { type: Array, default: () => [] },
@@ -53,7 +58,6 @@ const filteredTransactions = computed(() => {
     });
 });
 
-// FIXED: Added 'web.' prefix to route names
 const exportDailyInReport = () => {
     if (!startDate.value) return;
     window.open(route('web.transactions.export-daily-in', { date: startDate.value }), '_blank');
@@ -100,16 +104,16 @@ const resetFilters = () => {
                 </div>
                 
                 <div class="flex items-center gap-2">
-                    <button v-if="activeTab === 'in' && startDate" @click="exportDailyInReport" class="px-4 py-2 bg-emerald-600 text-white text-[10px] font-black rounded-lg hover:bg-emerald-700 uppercase flex items-center gap-2 shadow-md shadow-emerald-100">
+                    <button v-if="activeTab === 'in' && startDate && userRole !== 'viewer'" @click="exportDailyInReport" class="px-4 py-2 bg-emerald-600 text-white text-[10px] font-black rounded-lg hover:bg-emerald-700 uppercase flex items-center gap-2 shadow-md shadow-emerald-100">
                         <Download class="w-3.5 h-3.5" /> Export Daily In
                     </button>
-                    <button v-if="filterDept" @click="exportDepartmentReport" class="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 uppercase flex items-center gap-2 shadow-md shadow-blue-100">
+                    <button v-if="filterDept && userRole !== 'viewer'" @click="exportDepartmentReport" class="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-lg hover:bg-blue-700 uppercase flex items-center gap-2 shadow-md shadow-blue-100">
                         <Download class="w-3.5 h-3.5" /> Dept Report
                     </button>
-                    <Link :href="route('web.transactions.stock-in')" class="bg-emerald-600 text-white px-4 py-2 text-[10px] font-black rounded-lg uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-700 shadow-md">
+                    <Link v-if="userRole !== 'viewer'" :href="route('web.transactions.stock-in')" class="bg-emerald-600 text-white px-4 py-2 text-[10px] font-black rounded-lg uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-700 shadow-md">
                         <PackagePlus class="w-3.5 h-3.5" /> Stock In
                     </Link>
-                    <Link :href="route('web.transactions.stock-out')" class="bg-slate-900 text-white px-4 py-2 text-[10px] font-black rounded-lg uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 shadow-md">
+                    <Link v-if="userRole !== 'viewer'" :href="route('web.transactions.stock-out')" class="bg-slate-900 text-white px-4 py-2 text-[10px] font-black rounded-lg uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 shadow-md">
                         <PackageMinus class="w-3.5 h-3.5" /> Stock Out
                     </Link>
                 </div>
@@ -176,7 +180,7 @@ const resetFilters = () => {
                                         <button @click="openViewModal(trx)" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
                                             <Eye class="w-4 h-4" />
                                         </button>
-                                        <a :href="route('web.transactions.export-pdf', trx.raw_id)" target="_blank" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                                        <a v-if="userRole !== 'viewer'" :href="route('web.transactions.export-pdf', trx.raw_id)" target="_blank" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
                                             <Download class="w-4 h-4" />
                                         </a>
                                     </div>
@@ -246,7 +250,7 @@ const resetFilters = () => {
                 </div>
 
                 <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-2">
-                    <a :href="route('web.transactions.export-pdf', selectedTransaction?.raw_id)" 
+                    <a v-if="userRole !== 'viewer'" :href="route('web.transactions.export-pdf', selectedTransaction?.raw_id)" 
                         target="_blank"
                         class="flex-1 py-3 bg-slate-900 text-white text-[10px] font-black rounded-xl uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-800 transition-all">
                         <Download class="w-4 h-4" /> Download PDF

@@ -22,6 +22,8 @@ class ItemController extends Controller
 
     public function create()
     {
+        dd('Ang role ko ay: "' . auth()->user()->role . '"');
+        
         Gate::authorize('manage-inventory');
 
         return Inertia::render('Items/Create', [
