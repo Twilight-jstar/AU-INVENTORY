@@ -2,82 +2,48 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'; 
 import { Link, usePage } from '@inertiajs/vue3'; 
 import { 
-    Package, 
-    Tags, 
-    Scale, 
-    History as HistoryIcon, 
-    LayoutDashboard,
-    LogOut,
-    Menu,
-    X,
-    User,
-    ChevronUp,
-    ShieldAlert,
-    CircleCheck,
-    CircleAlert,
-    TriangleAlert
+    Package, Tags, Scale, History as HistoryIcon, LayoutDashboard,
+    LogOut, User, ChevronUp, X, CircleCheck, CircleAlert
 } from 'lucide-vue-next';
 import { route } from 'ziggy-js';
 
-// 1. Define Types to fix the TypeScript "Property does not exist on type '{}'" errors
-interface FlashProps {
-    success?: string;
-    error?: string;
-    warning?: string;
-}
+interface FlashProps { success?: string; error?: string; warning?: string; }
 
-const isMobileMenuOpen = ref(false);
 const showUserMenu = ref(false); 
 const page = usePage();
 
-// Access shared props safely with type casting
 const flash = computed(() => page.props.flash as FlashProps);
 const userName = computed(() => page.props.auth.user?.name || 'Guest User');
-const userRole = computed(() => page.props.auth.user?.role || 'Viewer');
+const userRole = computed(() => (page.props.auth.user?.role as string)?.toLowerCase() || 'viewer');
 
-// ============================================================
-// NOTIFICATION LOGIC (Success, Error, and Low Stock Warning)
-// ============================================================
 const showNotification = ref(false);
-
 watch(() => page.props.flash as FlashProps, (newFlash) => {
-    const hasFlash = newFlash && (newFlash.success || newFlash.error || newFlash.warning);
-
-    if (hasFlash) {
-        showNotification.value = false; // Reset first
-        setTimeout(() => {
-            showNotification.value = true;
-            // Auto-hide after 5 seconds
-            setTimeout(() => {
-                showNotification.value = false;
-            }, 5000);
-        }, 100);
+    if (newFlash?.success || newFlash?.error || newFlash?.warning) {
+        showNotification.value = true;
+        setTimeout(() => showNotification.value = false, 5000);
     }
-}, { deep: true, immediate: true });
+}, { deep: true });
 
-// ============================================================
-// NAVIGATION & ZIGGY SAFETY (Prevents White Screen Crash)
-// ============================================================
 const navigationGroups = [
     {
         label: 'Analytics',
         items: [
-            { name: 'Dashboard', routeName: 'dashboard', icon: LayoutDashboard, active: 'dashboard', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
+            { name: 'Dashboard', routeName: 'dashboard', icon: LayoutDashboard, active: 'dashboard', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
         ]
     },
     {
         label: 'Inventory Control',
         items: [
-            { name: 'Inventory Items', routeName: 'items.index', icon: Package, active: 'items.*', roles: ['Admin', 'Clerk', 'Custodian', 'Viewer'] },
-            { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['Admin', 'Clerk', 'Custodian'] },
-            { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['Admin', 'Clerk', 'Custodian'] },
+            // In-update para tumugma sa .names('web.items') sa web.php
+            { name: 'Inventory Items', routeName: 'web.items.index', icon: Package, active: 'web.items.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
+            { name: 'Asset Categories', routeName: 'categories.index', icon: Tags, active: 'categories.*', roles: ['admin', 'clerk', 'custodian'] },
+            { name: 'Measurement Units', routeName: 'units.index', icon: Scale, active: 'units.*', roles: ['admin', 'clerk', 'custodian'] },
         ]
     },
     {
         label: 'System Access',
         items: [
-            // Only 'Admin' can see this group
-            { name: 'Manage Users', routeName: 'users.index', icon: User, active: 'users.*', roles: ['Admin'] },
+            { name: 'Manage Users', routeName: 'users.index', icon: User, active: 'users.*', roles: ['admin'] },
         ]
     },
     {
@@ -88,33 +54,23 @@ const navigationGroups = [
     }
 ];
 
-// Helper to prevent Ziggy crash if a route is not authorized/defined
-const safeRoute = (name: string) => {
-    try {
-        // Only attempt to resolve if Ziggy knows the route
-        return route().has(name) ? route(name) : '#';
-    } catch (e) {
-        return '#'; 
-    }
-};
-
 const isRouteActive = (activePattern: string) => {
-    try {
+    try { 
         return route().current(activePattern);
-    } catch (e) {
-        return false;
+    } catch (e) { 
+        return false; 
     }
 };
 
 const filteredGroups = computed(() => {
     return navigationGroups.map(group => ({
         ...group,
-        items: group.items.filter(item => item.roles.includes(userRole.value as string))
+        items: group.items.filter(item => item.roles.includes(userRole.value))
     })).filter(group => group.items.length > 0);
 });
 
 const pageTitle = computed(() => {
-    if (page.props.title) return page.props.title;
+    if (page.props.title) return page.props.title as string;
     for (const group of navigationGroups) {
         const activeNav = group.items.find(item => isRouteActive(item.active));
         if (activeNav) return activeNav.name;
@@ -123,10 +79,7 @@ const pageTitle = computed(() => {
 });
 
 const closeUserMenu = (e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (!target.closest('.user-menu-container')) {
-        showUserMenu.value = false;
-    }
+    if (!(e.target as HTMLElement).closest('.user-menu-container')) showUserMenu.value = false;
 };
 
 onMounted(() => window.addEventListener('click', closeUserMenu));
@@ -135,25 +88,16 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
 
 <template>
     <div class="min-h-screen flex flex-col md:flex-row relative bg-slate-50">
-        
         <Transition name="fade-slide">
             <div v-if="showNotification" class="fixed top-6 right-6 z-[9999] max-w-md w-full flex flex-col gap-2 pointer-events-none">
-                
-                <div v-if="flash.success" class="pointer-events-auto bg-emerald-500 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3 border border-emerald-400">
+                <div v-if="flash.success" class="pointer-events-auto bg-emerald-600 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3 border border-emerald-400">
                     <CircleCheck class="w-5 h-5 text-white shrink-0 mt-0.5" />
                     <div class="flex-1 text-sm font-bold">{{ flash.success }}</div>
                     <button @click="showNotification = false" class="text-white/80 hover:text-white shrink-0"><X class="w-4 h-4" /></button>
                 </div>
-
-                <div v-if="flash.error" class="pointer-events-auto bg-rose-500 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3 border border-rose-400">
+                <div v-if="flash.error" class="pointer-events-auto bg-rose-600 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3 border border-rose-400">
                     <CircleAlert class="w-5 h-5 text-white shrink-0 mt-0.5" />
                     <div class="flex-1 text-sm font-bold">{{ flash.error }}</div>
-                    <button @click="showNotification = false" class="text-white/80 hover:text-white shrink-0"><X class="w-4 h-4" /></button>
-                </div>
-
-                <div v-if="flash.warning" class="pointer-events-auto bg-amber-500 text-white rounded-xl p-4 shadow-2xl flex items-start gap-3 border border-amber-400">
-                    <TriangleAlert class="w-5 h-5 text-white shrink-0 mt-0.5" />
-                    <div class="flex-1 text-sm font-bold">{{ flash.warning }}</div>
                     <button @click="showNotification = false" class="text-white/80 hover:text-white shrink-0"><X class="w-4 h-4" /></button>
                 </div>
             </div>
@@ -161,104 +105,58 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
 
         <aside class="hidden md:flex flex-col w-64 bg-purple-900 sticky top-0 h-screen z-20 shadow-2xl border-r border-purple-800">
             <div class="p-6">
-                <div class="flex flex-col gap-1">
-                    <div class="flex items-center gap-3 text-white">
-                        <div class="bg-white/10 p-2 rounded-lg">
-                            <Package class="w-6 h-6 text-purple-300" />
-                        </div>
-                        <span class="font-bold tracking-tight text-xl uppercase">ALF Inventory</span>
-                    </div>
-                    <p class="text-[9px] text-purple-300/50 font-black uppercase tracking-[0.25em] mt-2">Management System v2.0</p>
+                <div class="flex items-center gap-3 text-white">
+                    <div class="bg-white/10 p-2 rounded-lg"><Package class="w-6 h-6 text-purple-300" /></div>
+                    <span class="font-bold tracking-tight text-xl uppercase">ALF Inventory</span>
                 </div>
             </div>
 
             <nav class="flex-1 px-4 space-y-4 mt-2 overflow-y-auto no-scrollbar">
                 <div v-for="group in filteredGroups" :key="group.label" class="space-y-1">
-                    <h3 class="px-4 text-[9px] font-black text-purple-300/30 uppercase tracking-[0.2em] mb-1">
-                        {{ group.label }}
-                    </h3>
-                    
+                    <h3 class="px-4 text-[9px] font-black text-purple-300/40 uppercase tracking-[0.2em] mb-1">{{ group.label }}</h3>
                     <div class="space-y-0.5">
                         <Link 
                             v-for="item in group.items" 
                             :key="item.name"
-                            :href="safeRoute(item.routeName)"
-                            class="flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 group"
-                            :class="isRouteActive(item.active) 
-                                ? 'bg-white/15 text-white shadow-inner border border-white/10' 
-                                : 'text-purple-100/70 hover:bg-white/5 hover:text-white'"
+                            :href="route().has(item.routeName) ? route(item.routeName) : '#'"
+                            class="flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 group relative"
+                            :class="isRouteActive(item.active) ? 'bg-white/15 text-white border border-white/10 shadow-sm' : 'text-purple-100/70 hover:bg-white/5 hover:text-white'"
                         >
-                            <component :is="item.icon" class="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
+                            <component :is="item.icon" class="w-4 h-4 opacity-70 group-hover:opacity-100" />
                             {{ item.name }}
+                            <div v-if="isRouteActive(item.active)" class="absolute right-2 w-1.5 h-1.5 rounded-full bg-purple-300"></div>
                         </Link>
                     </div>
                 </div>
             </nav>
 
-            <div v-if="userRole !== 'Viewer'" class="mx-4 mb-4 px-3 py-2 bg-white/5 border border-white/5 rounded-xl">
-                <div class="flex items-center gap-1.5 mb-0.5">
-                    <ShieldAlert class="w-2.5 h-2.5 text-purple-400/80" />
-                    <span class="text-[8px] font-black text-purple-400/80 uppercase tracking-[0.15em]">System Live</span>
-                </div>
-                <p class="text-[9px] text-purple-100/40 leading-tight">Monitoring active logs.</p>
-            </div>
-
             <div class="p-4 user-menu-container border-t border-purple-800 bg-purple-950/30">
-                <div class="p-3 rounded-2xl flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer" @click.stop="showUserMenu = !showUserMenu">
-                    <div class="flex items-center gap-3 overflow-hidden">
-                        <div class="shrink-0 w-8 h-8 rounded-lg bg-purple-700 border border-purple-500 flex items-center justify-center text-purple-100 shadow-sm">
-                            <User class="w-4 h-4" />
-                        </div>
-                        <div class="flex flex-col overflow-hidden">
-                            <span class="text-xs text-white font-bold truncate">{{ userName }}</span>
+                <div class="p-3 rounded-2xl flex items-center justify-between hover:bg-white/5 cursor-pointer" @click.stop="showUserMenu = !showUserMenu">
+                    <div class="flex items-center gap-3">
+                        <div class="shrink-0 w-8 h-8 rounded-lg bg-purple-700 flex items-center justify-center text-purple-100"><User class="w-4 h-4" /></div>
+                        <div class="flex flex-col overflow-hidden text-white">
+                            <span class="text-xs font-bold truncate">{{ userName }}</span>
                             <span class="text-[9px] text-purple-300/60 font-black uppercase tracking-widest">{{ userRole }}</span>
                         </div>
                     </div>
-                    <ChevronUp class="w-4 h-4 text-purple-300 transition-transform duration-300" :class="{'rotate-180': showUserMenu}" />
+                    <ChevronUp class="w-4 h-4 text-purple-400 transition-transform duration-300" :class="{'rotate-180': showUserMenu}" />
                 </div>
-
                 <Transition name="pop">
                     <div v-if="showUserMenu" class="absolute bottom-24 left-4 right-4 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50">
-                        <Link 
-                            :href="route('logout')" 
-                            method="post" 
-                            as="button"
-                            class="flex w-full items-center gap-3 px-5 py-4 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                            <LogOut class="w-4 h-4" />
-                            SIGN OUT OF SYSTEM
+                        <Link :href="route('logout')" method="post" as="button" class="flex w-full items-center gap-3 px-5 py-4 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors">
+                            <LogOut class="w-4 h-4" /> SIGN OUT
                         </Link>
                     </div>
                 </Transition>
             </div>
         </aside>
 
-        <main class="flex-1 relative z-10 flex flex-col h-screen overflow-hidden">
-            
-            <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-10 overflow-hidden">
-                <img src="/images/bg.png" alt="ALF Watermark" class="w-[100%] md:w-[80%] h-auto object-contain">
-            </div>
-
-            <header class="w-full bg-white/70 backdrop-blur-xl border-b border-slate-200 px-6 md:px-10 py-5">
-                <div class="max-w-7xl mx-auto flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-800 tracking-tight leading-none uppercase">
-                            {{ pageTitle }}
-                        </h2>
-                        <div class="flex items-center gap-2 mt-1.5">
-                            <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Official Registry</span>
-                        </div>
-                    </div>
-                </div>
+        <main class="flex-1 flex flex-col h-screen overflow-hidden">
+            <header class="w-full bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-5">
+                <h2 class="text-lg font-bold text-slate-800 uppercase tracking-tight">{{ pageTitle }}</h2>
             </header>
-
-            <div class="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar">
-                <div class="max-w-7xl mx-auto">
-                    <div class="relative z-10">
-                        <slot />
-                    </div>
-                </div>
+            <div class="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar bg-slate-50">
+                <slot />
             </div>
         </main>
     </div>
@@ -267,11 +165,9 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
 <style scoped>
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-.pop-enter-active { transition: all 0.3s ease-out; }
-.pop-leave-active { transition: all 0.2s ease-in; }
+.pop-enter-active, .pop-leave-active { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 .pop-enter-from, .pop-leave-to { opacity: 0; transform: translateY(10px) scale(0.95); }
-
-.fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-.fade-slide-enter-from, .fade-slide-leave-to { opacity: 0; transform: translateY(-20px) translateX(20px); }
+.fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.4s ease; }
+.fade-slide-enter-from { opacity: 0; transform: translateX(30px); }
+.fade-slide-leave-to { opacity: 0; transform: scale(0.9); }
 </style>

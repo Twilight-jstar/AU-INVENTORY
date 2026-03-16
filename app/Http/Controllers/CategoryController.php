@@ -8,11 +8,16 @@ use Inertia\Inertia;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $categories = Category::withCount('items')->get();
+
+        if ($request->wantsJson()) {
+            return response()->json($categories);
+        }
+
         return Inertia::render('Categories/Index', [
-            // withCount lets the frontend show how many items are in each category
-            'categories' => Category::withCount('items')->get()
+            'categories' => $categories
         ]);
     }
 
@@ -22,32 +27,53 @@ class CategoryController extends Controller
             'name' => 'required|max:100|unique:categories,name'
         ]);
 
-        Category::create($validated);
+        $category = Category::create($validated);
         
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Category created successfully.',
+                'category' => $category
+            ], 201);
+        }
+
         return redirect()->route('categories.index')->with('message', 'Category created successfully.');
     }
 
     public function update(Request $request, Category $category)
     {
         $validated = $request->validate([
-            // Ignore current category ID during unique check so you can save without changing the name
             'name' => 'required|max:100|unique:categories,name,' . $category->id
         ]);
 
         $category->update($validated);
         
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Category updated.',
+                'category' => $category
+            ]);
+        }
+
         return redirect()->route('categories.index')->with('message', 'Category updated.');
     }
 
-    public function destroy(Category $category)
+    public function destroy(Request $request, Category $category)
     {
-        // Safety Check: Check if items exist in this category before deleting
         if ($category->items()->count() > 0) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'error' => 'Cannot delete category. There are still items assigned to it.'
+                ], 422);
+            }
             return redirect()->back()->with('error', 'Cannot delete category. There are still items assigned to it.');
         }
 
         $category->delete();
         
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Category deleted.']);
+        }
+
         return redirect()->route('categories.index')->with('message', 'Category deleted.');
     }
 }

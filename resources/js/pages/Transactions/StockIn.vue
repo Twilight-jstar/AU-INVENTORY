@@ -17,12 +17,16 @@ const form = useForm({
     line_items: [{ item_id: '', quantity: 1, unit_cost: 0 }]
 });
 
+// Sinunod ang original computed property mo
 const generatedRefNo = computed(() => form.date_received);
+
 const addItemRow = () => form.line_items.push({ item_id: '', quantity: 1, unit_cost: 0 });
 const removeItemRow = (index) => form.line_items.length > 1 && form.line_items.splice(index, 1);
 
+// Logic para sa Export
 const triggerExport = () => {
-    const url = route('transactions.export-daily-in', { date: submittedDate.value });
+    // Tiyaking ang route name ay tumutugma sa web.php ('web.transactions.export-daily-in')
+    const url = route('web.transactions.export-daily-in', { date: submittedDate.value });
     window.open(url, '_blank');
 };
 
@@ -32,7 +36,7 @@ const resetForm = () => {
 };
 
 const submit = () => {
-    form.post(route('transactions.store_bulk_in'), {
+    form.post(route('web.transactions.store_bulk_in'), {
         onBefore: () => { submittedDate.value = form.date_received; },
         onSuccess: () => { recentlySubmitted.value = true; },
     });
@@ -44,7 +48,7 @@ const submit = () => {
     <AuthenticatedLayout>
         <div class="max-w-6xl mx-auto space-y-8 p-2 py-8">
             <div class="flex items-center gap-4 border-b border-slate-200 pb-6">
-                <Link :href="route('transactions.index')" class="p-2 bg-white ring-1 ring-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-all">
+                <Link :href="route('web.transactions.index')" class="p-2 bg-white ring-1 ring-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-all">
                     <ArrowLeft class="w-4 h-4" />
                 </Link>
                 <div>
@@ -56,7 +60,7 @@ const submit = () => {
             </div>
 
             <form @submit.prevent="submit" class="space-y-6">
-                <Card class="p-2 border-none ring-1 ring-slate-200 shadow-none overflow-hidden bg-white">
+                <Card class="p-2 border-none ring-1 ring-slate-200 shadow-none overflow-hidden bg-white rounded-none">
                     <div class="px-3 py-2 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2 mb-4">
                         <Truck class="w-3.5 h-3.5 text-slate-400" />
                         <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Inbound Log Details</h3>
@@ -64,7 +68,7 @@ const submit = () => {
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 p-3">
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Supplier Name</label>
-                            <input v-model="form.supplier_name" type="text" class="w-full border-none ring-1 ring-slate-200 rounded-sm text-sm h-10 px-3 uppercase font-semibold focus:ring-slate-900 transition-all" required :disabled="recentlySubmitted" />
+                            <input v-model="form.supplier_name" type="text" class="w-full border-none ring-1 ring-slate-200 rounded-sm text-sm h-10 px-3 font-semibold focus:ring-slate-900 transition-all" required :disabled="recentlySubmitted" />
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date Received</label>
@@ -77,7 +81,7 @@ const submit = () => {
                     </div>
                 </Card>
 
-                <Card class="p-2 border-none ring-1 ring-slate-200 shadow-none overflow-hidden bg-white">
+                <Card class="p-2 border-none ring-1 ring-slate-200 shadow-none overflow-hidden bg-white rounded-none">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200">

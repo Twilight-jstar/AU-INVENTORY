@@ -1,77 +1,43 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ItemController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\UnitController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\DashboardController; 
-use App\Http\Controllers\ReportController;
+use App\Http\Controllers\{ItemController, CategoryController, UnitController, UserController, TransactionController, DashboardController, ReportController};
 
-Route::get('/', function () {
-    return redirect()->route('dashboard');
-})->name('home');
+// Redirect root to dashboard
+Route::get('/', fn() => redirect()->route('dashboard'))->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    
-    // ==========================================
-    // 1. SHARED ACCESS (All Roles)
-    // ==========================================
+Route::middleware(['auth'])->group(function () {
+    // Dashboard
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('items', [ItemController::class, 'index'])->name('items.index');
+
+    // Inventory Items (Resource with custom names)
+    Route::get('items/generate-code', [ItemController::class, 'generateProductCode'])->name('web.items.generate-code');
+    Route::resource('items', ItemController::class)->names('web.items'); 
+
+    // Static Resources
+    Route::resource('categories', CategoryController::class);
+    Route::resource('units', UnitController::class);
     
-    // BAGO: TINANGGAL NA DITO YUNG TRANSACTIONS ROUTE PARA DI MA-ACCESS NG VIEWER
-
-    // ==========================================
-    // 2. INVENTORY OPERATIONS (Admin, Clerk, Custodian)
-    // ==========================================
-    Route::middleware('can:manage-inventory')->group(function () {
-
-        // BAGO: NILIPAT DITO YUNG TRANSACTIONS ROUTE 
-        // Para ang may access lang dito ay yung mga may 'manage-inventory' permission
-        Route::get('transactions', [TransactionController::class, 'index'])->name('transactions.index');
-
-        // --- ITEM MANAGEMENT ---
-        // Static routes first to avoid 404s
-        Route::get('items/generate-code', [ItemController::class, 'generateProductCode'])->name('items.generate-code');
-        Route::get('items/create', [ItemController::class, 'create'])->name('items.create');
-        Route::post('items', [ItemController::class, 'store'])->name('items.store');
+    // Transactions Group
+    Route::group(['prefix' => 'transactions', 'as' => 'web.transactions.'], function () {
+        Route::get('/', [TransactionController::class, 'index'])->name('index'); 
+        Route::get('stock-in', [TransactionController::class, 'stockIn'])->name('stock-in');
+        Route::post('stock-in/bulk', [TransactionController::class, 'store_bulk_in'])->name('store_bulk_in');
+        Route::get('stock-out', [TransactionController::class, 'stockOut'])->name('stock-out');
+        Route::post('stock-out/bulk', [TransactionController::class, 'store_bulk_out'])->name('store_bulk_out');
         
-        // Wildcard routes
-        Route::get('items/{item}', [ItemController::class, 'show'])->name('items.show');
-        Route::get('items/{item}/edit', [ItemController::class, 'edit'])->name('items.edit');
-        Route::put('items/{item}', [ItemController::class, 'update'])->name('items.update');
-        Route::delete('items/{item}', [ItemController::class, 'destroy'])->name('items.destroy');
-
-        // --- HELPERS ---
-        Route::resource('categories', CategoryController::class);
-        Route::resource('units', UnitController::class);
-        
-        // --- STOCK IN / OUT ---
-        Route::controller(TransactionController::class)->group(function () {
-            Route::get('transactions/stock-in', 'stockIn')->name('transactions.stock-in');
-            Route::post('transactions/stock-in/bulk', 'store_bulk_in')->name('transactions.store_bulk_in');
-            Route::get('transactions/stock-out', 'stockOut')->name('transactions.stock-out');
-            Route::post('transactions/stock-out/bulk', 'store_bulk_out')->name('transactions.store_bulk_out');
-        });
-
-        // --- EXPORTS ---
-        Route::get('inventory/download-report', [ReportController::class, 'download'])->name('reports.download');
-        
-        Route::controller(TransactionController::class)->prefix('transactions/export')->group(function () {
-            Route::get('/daily-in', 'exportDailyIn')->name('transactions.export-daily-in');
-            Route::get('/department', 'exportByDepartment')->name('transactions.export-by-department');
-            Route::get('/selected/items', 'exportSelected')->name('transactions.export-selected');
-            Route::get('/bulk/report', 'exportBulkPdf')->name('transactions.export-bulk');
-            // This MUST be the last route in the group
-            Route::get('/{id}', 'exportPdf')->name('transactions.export-pdf');
-        });
+        // Export Routes
+        Route::get('export/daily-in', [TransactionController::class, 'exportDailyIn'])->name('export-daily-in');
+        Route::get('export/department', [TransactionController::class, 'exportByDepartment'])->name('export-by-department');
+        Route::get('export/selected/items', [TransactionController::class, 'exportSelected'])->name('export-selected');
+        Route::get('export/bulk/report', [TransactionController::class, 'exportBulkPdf'])->name('export-bulk');
+        Route::get('export/{id}', [TransactionController::class, 'exportPdf'])->name('export-pdf');
     });
 
-    // ==========================================
-    // 3. USER MANAGEMENT (Admin Only)
-    // ==========================================
+    // Reports
+    Route::get('inventory/download-report', [ReportController::class, 'download'])->name('reports.download');
+
+    // Admin Only Access
     Route::middleware('can:manage-users')->group(function () {
         Route::resource('users', UserController::class);
     });

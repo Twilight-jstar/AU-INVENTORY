@@ -1,32 +1,34 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\v1;
 
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Models\Item;
 use App\Models\Unit;
 use App\Models\Category;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Inertia\Inertia;
 
 class ItemController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        Gate::authorize('view-inventory'); 
+        // No gate here allows the Registry to load for all authenticated users.
+        $items = Item::with(['category', 'unit'])->get();
+        return response()->json($items);
+    }
 
-        return Inertia::render('Items/Index', [
-            'items' => Item::with(['category', 'unit'])->get()
-        ]);
+    public function show(Item $item)
+    {
+        Gate::authorize('view-inventory');
+        $item->load(['category', 'unit']);
+        return response()->json($item);
     }
 
     public function create()
     {
-        dd('Ang role ko ay: "' . auth()->user()->role . '"');
-        
         Gate::authorize('manage-inventory');
-
-        return Inertia::render('Items/Create', [
+        return response()->json([
             'categories' => Category::select('id', 'name')->get(),
             'units' => Unit::select('id', 'name')->get()
         ]);
@@ -46,27 +48,12 @@ class ItemController extends Controller
             'description'  => 'nullable|string'
         ]);
 
-        Item::create($validated);
-        
-        return redirect()->route('web.items.index')->with('success', 'Item created successfully.');
-    }
+        $item = Item::create($validated);
 
-    public function show(Item $item)
-    {
-        Gate::authorize('view-inventory');
-        return Inertia::render('Items/Show', [
-            'item' => $item->load(['category', 'unit'])
-        ]);
-    }
-
-    public function edit(Item $item)
-    {
-        Gate::authorize('manage-inventory');
-        return Inertia::render('Items/Edit', [
-            'item' => $item,
-            'categories' => Category::select('id', 'name')->get(),
-            'units' => Unit::select('id', 'name')->get()
-        ]);
+        return response()->json([
+            'message' => 'Item created successfully.',
+            'item' => $item
+        ], 201);
     }
 
     public function update(Request $request, Item $item)
@@ -84,31 +71,32 @@ class ItemController extends Controller
 
         $item->update($validated);
 
-        return redirect()->route('web.items.index')->with('success', 'Item updated successfully.');
+        return response()->json([
+            'message' => 'Item updated successfully.',
+            'item' => $item
+        ]);
     }
 
     public function destroy(Item $item)
     {
+        // This now matches the definition in AppServiceProvider
         Gate::authorize('delete-inventory');
+
         $item->delete();
-        return redirect()->route('web.items.index')->with('success', 'Item deleted.');
+        return response()->json(['message' => 'Item deleted successfully.']);
     }
 
     public function generateProductCode(Request $request)
     {
         $request->validate(['category_id' => 'required|exists:categories,id']);
+
         $category = Category::findOrFail($request->category_id);
         $prefix = strtoupper(str_replace(' ', '', $category->name)); 
 
-        $latestItem = Item::where('category_id', $category->id)->orderBy('id', 'desc')->first();
+        $latest = Item::where('category_id', $category->id)->latest('id')->first();
 
-        if (!$latestItem || !$latestItem->product_code) {
-            $nextCode = $prefix . '-001';
-        } else {
-            $parts = explode('-', $latestItem->product_code);
-            $lastNumber = intval(end($parts)); 
-            $nextCode = $prefix . '-' . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-        }
+        $nextNumber = $latest ? intval(last(explode('-', $latest->product_code))) + 1 : 1;
+        $nextCode = $prefix . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
         return response()->json(['next_code' => $nextCode]);
     }

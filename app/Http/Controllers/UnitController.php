@@ -8,21 +8,34 @@ use Inertia\Inertia;
 
 class UnitController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $units = Unit::withCount('items')->get();
+
+        if ($request->wantsJson()) {
+            return response()->json($units);
+        }
+
         return Inertia::render('Units/Index', [
-            'units' => Unit::withCount('items')->get() // Added item count for better UI
+            'units' => $units
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|max:50|unique:units,name' // Added unique check
+            'name' => 'required|max:50|unique:units,name'
         ]);
 
-        Unit::create($validated);
+        $unit = Unit::create($validated);
         
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Unit created.',
+                'unit' => $unit
+            ], 201);
+        }
+
         return redirect()->route('units.index')->with('message', 'Unit created.');
     }
 
@@ -34,18 +47,33 @@ class UnitController extends Controller
 
         $unit->update($validated);
         
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Unit updated.',
+                'unit' => $unit
+            ]);
+        }
+
         return redirect()->route('units.index')->with('message', 'Unit updated.');
     }
 
-    public function destroy(Unit $unit)
+    public function destroy(Request $request, Unit $unit)
     {
-        // Safety Check: Don't delete if items are using this unit
         if ($unit->items()->count() > 0) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'error' => 'Cannot delete unit. It is currently linked to items.'
+                ], 422);
+            }
             return redirect()->back()->with('error', 'Cannot delete unit. It is currently linked to items.');
         }
 
         $unit->delete();
         
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Unit deleted.']);
+        }
+
         return redirect()->route('units.index')->with('message', 'Unit deleted.');
     }
 }

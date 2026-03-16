@@ -6,7 +6,7 @@ import Card from '@/components/ui/card/Card.vue';
 import { 
     ArrowLeft, Save, Loader2, AlertCircle, Plus, Trash2, 
     Hash, Building2, UserCircle, FileText, Calendar, 
-    AlertTriangle // BAGO: In-import natin ito para sa warning icon
+    AlertTriangle, Download, RefreshCw
 } from 'lucide-vue-next';
 
 const props = defineProps({ 
@@ -17,12 +17,12 @@ const props = defineProps({
 const page = usePage();
 const recentlySubmitted = ref(false);
 const submittedRef = ref('');
+const submittedDept = ref(''); // Added to track department for export
 
 const form = useForm({
     department: '',
     released_to: '',
     released_by: page.props.auth.user?.name || 'Authorized Personnel', 
-    department: '',
     purpose: '',
     date_released: new Date().toISOString().substr(0, 10),
     line_items: [{ item_id: '', quantity: 1 }]
@@ -33,10 +33,10 @@ const generatedRefNo = computed(() => form.date_released);
 const addItemRow = () => form.line_items.push({ item_id: '', quantity: 1 });
 const removeItemRow = (index) => form.line_items.length > 1 && form.line_items.splice(index, 1);
 
-// Updated to export the specific batch by the date/ref_no
 const triggerExport = () => {
-    const url = route('transactions.export-by-department', { 
-        department: form.department,
+    // Nag-match sa web.php convention: 'web.transactions.export-by-department'
+    const url = route('web.transactions.export-by-department', { 
+        department: submittedDept.value,
         date: submittedRef.value 
     });
     window.open(url, '_blank');
@@ -46,12 +46,14 @@ const resetForm = () => {
     form.reset();
     recentlySubmitted.value = false;
     submittedRef.value = '';
+    submittedDept.value = '';
 };
 
 const submit = () => {
-    form.post(route('transactions.store_bulk_out'), {
+    form.post(route('web.transactions.store_bulk_out'), {
         onBefore: () => { 
             submittedRef.value = form.date_released; 
+            submittedDept.value = form.department;
         },
         onSuccess: () => { 
             recentlySubmitted.value = true; 
@@ -66,7 +68,6 @@ const isExceedingAvailableStock = computed(() => {
         return Number(line.quantity) > Number(item.quantity);
     });
 });
-
 </script>
 
 <template>
@@ -74,7 +75,7 @@ const isExceedingAvailableStock = computed(() => {
     <AuthenticatedLayout>
         <div class="max-w-6xl mx-auto space-y-8 p-2 py-8">
             <div class="flex items-center gap-4 border-b border-slate-200 pb-6">
-                <Link :href="route('transactions.index')" class="p-2 bg-white ring-1 ring-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-all">
+                <Link :href="route('web.transactions.index')" class="p-2 bg-white ring-1 ring-slate-200 rounded-sm hover:bg-slate-50 text-slate-400 transition-all">
                     <ArrowLeft class="w-4 h-4" />
                 </Link>
                 <div>
@@ -93,7 +94,7 @@ const isExceedingAvailableStock = computed(() => {
             </div>
 
             <form @submit.prevent="submit" class="space-y-6">
-                <Card class="p-2 border-none ring-1 ring-slate-200 shadow-none overflow-hidden bg-white">
+                <Card class="p-2 border-none ring-1 ring-slate-200 shadow-none overflow-hidden bg-white rounded-none">
                     <div class="px-3 py-2 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2 mb-4">
                         <Building2 class="w-3.5 h-3.5 text-slate-400" />
                         <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Requisition Details</h3>
@@ -102,27 +103,27 @@ const isExceedingAvailableStock = computed(() => {
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 p-3">
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Department</label>
-                            <select v-model="form.department" class="w-full border-none ring-1 ring-slate-200 rounded-sm text-sm h-10 px-3 bg-white" required :disabled="recentlySubmitted">
+                            <select v-model="form.department" class="w-full border-none ring-1 ring-slate-200 rounded-sm text-sm h-10 px-3 bg-white focus:ring-slate-900" required :disabled="recentlySubmitted">
                                 <option value="" disabled>Select</option>
                                 <option v-for="dept in departments" :key="dept.id" :value="dept.name">{{ dept.name }}</option>
                             </select>
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Released To (Receiver)</label>
-                            <input v-model="form.released_to" type="text" placeholder="Full Name" class="w-full border-none ring-1 ring-slate-200 rounded-sm text-sm h-10 px-3 font-semibold" required :disabled="recentlySubmitted" />
+                            <input v-model="form.released_to" type="text" placeholder="Full Name" class="w-full border-none ring-1 ring-slate-200 rounded-sm text-sm h-10 px-3 font-semibold focus:ring-slate-900" required :disabled="recentlySubmitted" />
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Release Date</label>
-                            <input v-model="form.date_released" type="date" class="w-full border-none ring-1 ring-slate-200 rounded-sm text-sm h-10 px-3 font-semibold" required :disabled="recentlySubmitted" />
+                            <input v-model="form.date_released" type="date" class="w-full border-none ring-1 ring-slate-200 rounded-sm text-sm h-10 px-3 font-semibold focus:ring-slate-900" required :disabled="recentlySubmitted" />
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Purpose / Remarks</label>
-                            <input v-model="form.purpose" type="text" placeholder="Optional" class="w-full border-none ring-1 ring-slate-200 rounded-sm text-sm h-10 px-3 transition-all" :disabled="recentlySubmitted" />
+                            <input v-model="form.purpose" type="text" placeholder="Optional" class="w-full border-none ring-1 ring-slate-200 rounded-sm text-sm h-10 px-3 transition-all focus:ring-slate-900" :disabled="recentlySubmitted" />
                         </div>
                     </div>
                 </Card>
 
-                <Card class="p-2 border-none ring-1 ring-slate-200 shadow-none overflow-hidden bg-white">
+                <Card class="p-2 border-none ring-1 ring-slate-200 shadow-none overflow-hidden bg-white rounded-none">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200">
@@ -134,7 +135,7 @@ const isExceedingAvailableStock = computed(() => {
                         <tbody class="divide-y divide-slate-100 font-medium">
                             <tr v-for="(line, index) in form.line_items" :key="index">
                                 <td class="px-4 py-3">
-                                    <select v-model="line.item_id" class="w-full border-none ring-1 ring-slate-100 rounded-sm text-sm h-9 uppercase" required :disabled="recentlySubmitted">
+                                    <select v-model="line.item_id" class="w-full border-none ring-1 ring-slate-100 rounded-sm text-sm h-9 uppercase focus:ring-slate-900" required :disabled="recentlySubmitted">
                                         <option value="" disabled>Select Property...</option>
                                         <option v-for="item in items" :key="item.id" :value="item.id">
                                             {{ item.name }} (Current: {{ item.quantity }})
@@ -149,7 +150,6 @@ const isExceedingAvailableStock = computed(() => {
                                             <AlertTriangle class="w-3 h-3" /> Will drop below minimum stock
                                         </p>
                                     </div>
-
                                 </td>
                                 <td class="px-4 py-3 border-l border-slate-50 text-center">
                                     <input v-model="line.quantity" type="number" step="0.1" min="0.1" class="w-full border-none text-center h-9 ring-1 ring-slate-100 rounded-sm focus:ring-slate-900" required :disabled="recentlySubmitted" />
