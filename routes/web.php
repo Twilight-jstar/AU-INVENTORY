@@ -11,7 +11,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Inventory Items (Resource with custom names)
-    Route::get('items/generate-code', [ItemController::class, 'generateProductCode'])->name('items.generate-code');
+    Route::get('items/generate-code', [ItemController::class, 'generateProductCode'])->name('web.items.generate-code');
     Route::resource('items', ItemController::class)->names('web.items'); 
 
     // Static Resources
