@@ -12,7 +12,7 @@ defineProps({
 const form = useForm({});
 const deleteItem = (id) => {
     if (confirm('Are you sure you want to remove this item from the registry?')) {
-        form.delete(route('items.destroy', id), {
+        form.delete(route('web.items.destroy', id), {
             preserveScroll: true,
             onSuccess: () => {
                 // Optional: add a toast notification here
@@ -43,7 +43,7 @@ const isLowStock = (item) => {
                 <div class="flex items-center gap-3">
                     <Link 
                         v-if="$page.props.auth.user.role !== 'viewer'"
-                        :href="route('items.create')" 
+                        :href="route('web.items.create')" 
                         class="inline-flex items-center px-4 py-2 bg-slate-900 hover:bg-purple-900 text-white text-xs font-bold rounded-sm shadow-sm transition-all uppercase tracking-widest"
                     >
                         <Plus class="w-3.5 h-3.5 mr-2" />
@@ -99,7 +99,7 @@ const isLowStock = (item) => {
                                 
                                 <td v-if="$page.props.auth.user.role !== 'viewer'" class="py-4 px-6 text-right">
                                     <div class="flex justify-end gap-3">
-                                        <Link :href="route('items.edit', item.id)" class="text-slate-400 hover:text-purple-600 transition-colors">
+                                        <Link :href="route('web.items.edit', item.id)" class="text-slate-400 hover:text-purple-600 transition-colors">
                                             <Pencil class="w-4 h-4" />
                                         </Link>
                                         

@@ -25,7 +25,7 @@ const form = useForm({
 watch(() => form.category_id, async (newId) => {
     if (newId) {
         try {
-            const response = await axios.get(route('items.generate-code'), {
+            const response = await axios.get(route('web.items.generate-code'), {
                 params: { category_id: newId }
             });
             form.product_code = response.data.next_code;
@@ -38,7 +38,7 @@ watch(() => form.category_id, async (newId) => {
 });
 
 const submit = () => {
-    form.post(route('items.store'));
+    form.post(route('web.items.store'));
 };
 </script>
 
@@ -50,7 +50,7 @@ const submit = () => {
             <div class="flex items-center justify-between mb-8 pb-4 border-b border-slate-200">
                 <div class="flex items-center gap-4">
                     <Link 
-                        :href="route('items.index')" 
+                        :href="route('web.items.index')" 
                         class="group flex items-center text-slate-500 hover:text-purple-700 transition-colors"
                     >
                         <ArrowLeft class="w-4 h-4 mr-1 group-hover:-translate-x-1 transition-transform" />
@@ -166,7 +166,7 @@ const submit = () => {
                             </div>
 
                             <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
-                                <Link :href="route('items.index')" class="text-sm font-semibold text-slate-500 hover:text-slate-700 px-4">
+                                <Link :href="route('web.items.index')" class="text-sm font-semibold text-slate-500 hover:text-slate-700 px-4">
                                     Cancel
                                 </Link>
                                 <button 

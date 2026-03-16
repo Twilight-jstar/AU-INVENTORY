@@ -40,7 +40,7 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.put(route('items.update', props.item.id));
+    form.put(route('web.items.update', props.item.id));
 };
 </script>
 
@@ -51,7 +51,7 @@ const submit = () => {
         <div class="space-y-6">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <Link :href="route('items.index')" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <Link :href="route('web.items.index')" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
                         <ArrowLeft class="w-5 h-5 text-slate-600" />
                     </Link>
                     <div>
@@ -144,7 +144,7 @@ const submit = () => {
 
                     <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
                         <Link 
-                            :href="route('items.index')"
+                            :href="route('web.items.index')"
                             class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900 h-10 px-4 py-2"
                         >
                             Cancel

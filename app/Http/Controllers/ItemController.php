@@ -46,7 +46,7 @@ class ItemController extends Controller
 
         Item::create($validated);
         
-        return redirect()->route('items.index')->with('success', 'Item created successfully.');
+        return redirect()->route('web.items.index')->with('success', 'Item created successfully.');
     }
 
     public function show(Item $item)
@@ -82,14 +82,14 @@ class ItemController extends Controller
 
         $item->update($validated);
 
-        return redirect()->route('items.index')->with('success', 'Item updated successfully.');
+        return redirect()->route('web.items.index')->with('success', 'Item updated successfully.');
     }
 
     public function destroy(Item $item)
     {
         Gate::authorize('delete-inventory');
         $item->delete();
-        return redirect()->route('items.index')->with('success', 'Item deleted.');
+        return redirect()->route('web.items.index')->with('success', 'Item deleted.');
     }
 
     public function generateProductCode(Request $request)
