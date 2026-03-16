@@ -19,7 +19,7 @@ defineProps<{
                     >
                         <div class="mb-1 flex items-center justify-center rounded-md">
                             <img 
-                                src="/logo.png" 
+                                src="/images/alf-logo-2022.png" 
                                 alt="Inventory Logo" 
                                 class="h-16 w-auto object-contain" 
                             />
