@@ -151,11 +151,16 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
             </div>
         </aside>
 
-        <main class="flex-1 flex flex-col h-screen overflow-hidden">
-            <header class="w-full bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-5">
+        <main class="flex-1 relative flex flex-col h-screen overflow-hidden bg-slate-50">
+            <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden opacity-50">
+                <img src="/images/bg.png" alt="ALF Watermark" class="w-[80%] md:w-[60%] h-auto object-contain">
+            </div>
+
+            <header class="relative z-10 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-5">
                 <h2 class="text-lg font-bold text-slate-800 uppercase tracking-tight">{{ pageTitle }}</h2>
             </header>
-            <div class="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar bg-slate-50">
+
+            <div class="relative z-10 flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar bg-transparent">
                 <slot />
             </div>
         </main>
