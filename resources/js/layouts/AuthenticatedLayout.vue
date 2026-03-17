@@ -49,7 +49,7 @@ const navigationGroups = [
         label: 'Activity Logs',
         items: [
             // BAGO: Inayos ang routeName sa 'web.transactions.index' at idinagdag ang 'viewer' at 'admin' sa roles
-            { name: 'Stock In / Stock Out', routeName: 'web.transactions.index', icon: HistoryIcon, active: 'web.transactions.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
+            { name: 'Stock In / Stock Out', routeName: 'web.transactions.index', icon: HistoryIcon, active: 'web.transactions.*', roles: ['clerk', 'custodian', 'viewer'] },
         ]
     }
 ];
