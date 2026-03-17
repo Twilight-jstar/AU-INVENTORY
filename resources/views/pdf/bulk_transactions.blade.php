@@ -104,7 +104,7 @@
             <td style="text-align: center; vertical-align: middle;">
                 <div style="display: inline-block; text-align: left;">
                     <div style="display: inline-block; vertical-align: middle; margin-right: 12px;">
-                        <img src="{{ public_path('images/ALF Logo 2022.png') }}" style="height: 50px; display: block;">
+                        <img src="{{ public_path('images/alf-logo-2022.png') }}" style="height: 50px; display: block;">
                     </div>
                     
                     <div style="display: inline-block; vertical-align: middle; text-align: center;">
