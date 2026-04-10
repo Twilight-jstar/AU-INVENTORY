@@ -48,8 +48,8 @@ const navigationGroups = [
     {
         label: 'Activity Logs',
         items: [
-            // BAGO: Inayos ang pangalan ng route na ginagamit at tinanggal ang 'viewer' role
-            { name: 'Stock In / Stock Out', routeName: 'web.transactions.index', icon: HistoryIcon, active: 'web.transactions.*', roles: ['admin', 'clerk', 'custodian', 'viewer'] },
+            // BAGO: Inayos ang routeName sa 'web.transactions.index' at idinagdag ang 'viewer' at 'admin' sa roles
+            { name: 'Stock In / Stock Out', routeName: 'web.transactions.index', icon: HistoryIcon, active: 'web.transactions.*', roles: ['clerk', 'custodian', 'viewer'] },
         ]
     }
 ];
@@ -133,9 +133,7 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
             <div class="p-4 user-menu-container border-t border-purple-800 bg-purple-950/30">
                 <div class="p-3 rounded-2xl flex items-center justify-between hover:bg-white/5 cursor-pointer" @click.stop="showUserMenu = !showUserMenu">
                     <div class="flex items-center gap-3">
-                        <div class="shrink-0 w-8 h-8 rounded-lg bg-purple-700 flex items-center justify-center text-purple-100">
-                            <User class="w-4 h-4" />
-                        </div>
+                        <div class="shrink-0 w-8 h-8 rounded-lg bg-purple-700 flex items-center justify-center text-purple-100"><User class="w-4 h-4" /></div>
                         <div class="flex flex-col overflow-hidden text-white">
                             <span class="text-xs font-bold truncate">{{ userName }}</span>
                             <span class="text-[9px] text-purple-300/60 font-black uppercase tracking-widest">{{ userRole }}</span>
@@ -153,11 +151,16 @@ onUnmounted(() => window.removeEventListener('click', closeUserMenu));
             </div>
         </aside>
 
-        <main class="flex-1 flex flex-col h-screen overflow-hidden">
-            <header class="w-full bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-5">
+        <main class="flex-1 relative flex flex-col h-screen overflow-hidden bg-slate-50">
+            <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden opacity-50">
+                <img src="/images/bg.png" alt="ALF Watermark" class="w-[80%] md:w-[60%] h-auto object-contain">
+            </div>
+
+            <header class="relative z-10 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-5">
                 <h2 class="text-lg font-bold text-slate-800 uppercase tracking-tight">{{ pageTitle }}</h2>
             </header>
-            <div class="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar bg-slate-50">
+
+            <div class="relative z-10 flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar bg-transparent">
                 <slot />
             </div>
         </main>

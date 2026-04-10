@@ -22,8 +22,7 @@ class ItemController extends Controller
 
     public function create()
     {
-        dd('Ang role ko ay: "' . auth()->user()->role . '"');
-        
+        // BAGO: Binura natin yung dd() para gumana yung 403 error restriction
         Gate::authorize('manage-inventory');
 
         return Inertia::render('Items/Create', [
