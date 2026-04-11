@@ -21,10 +21,6 @@ class Item extends Model
         'description'
     ];
 
-    // ============================================================
-    // 👇 ITO ANG DINAGDAG KO (VERY IMPORTANT) 👇
-    // Sinisiguro nito na laging "Number" ang turing sa stock values
-    // ============================================================
     protected $casts = [
         'quantity' => 'integer',
         'min_stock' => 'integer',
