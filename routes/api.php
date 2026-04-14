@@ -15,13 +15,10 @@ use App\Http\Controllers\Api\v1\TransactionController;
 // Public Auth
 Route::post('/login', [AuthController::class, 'login']);
 
-// Protected API Routes
-Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
-    
-    // Items API
-    Route::apiResource('items', ItemController::class);
-    Route::get('items/generate-code', [ItemController::class, 'generateProductCode']);
+// Items API
+Route::apiResource('items', ItemController::class);
+Route::get('/productCode', [ItemController::class, 'productCode'])->name('items.product-code');
+Route::get('items/generate-code', [ItemController::class, 'generateProductCode']);
 
-    // Transactions API
-    Route::apiResource('transactions', TransactionController::class);
-});
+// Transactions API
+Route::apiResource('transactions', TransactionController::class);
