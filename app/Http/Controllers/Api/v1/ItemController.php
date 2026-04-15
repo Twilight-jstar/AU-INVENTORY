@@ -23,9 +23,20 @@ class ItemController extends Controller
         $items = Item::get([
             'id', 
             'product_code', 
-            'name', 
+            'name',
+            'quantity',
         ]);
         return response()->json($items);
+    }
+
+    public function singleProductCode($id)
+    {
+        $item = Item::select([
+            'id', 
+            'quantity',
+        ])->findOrFail($id);
+
+        return response()->json($item);
     }
 
     public function show(Item $item)
