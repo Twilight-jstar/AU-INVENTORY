@@ -16,12 +16,12 @@ class TransactionController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validate the incoming API request including the new reference_no
+        // Validate the incoming API request including the new reference_no
         $validated = $request->validate([
             'item_id'            => 'required|exists:items,id',
             'user_id'            => 'required|exists:users,id',
             'type'               => 'required|in:In,Out',
-            'quantity'           => 'required|integer|min:1', // Change to numeric if you decide to use decimals
+            'quantity'           => 'required|integer|min:1', 
             'source_destination' => 'nullable|string|max:255',
             'personnel_name'     => 'nullable|string|max:255',
             'reference_no'       => 'nullable|string|max:255',
@@ -40,7 +40,7 @@ class TransactionController extends Controller
                 ], 422); 
             }
 
-            // 2. Create the Transaction record (now including reference_no)
+            // Create the Transaction record (now including reference_no)
             $transaction = Transaction::create([
                 'item_id'            => $validated['item_id'],
                 'user_id'            => $validated['user_id'], 

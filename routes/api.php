@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\v1\ItemController; 
 use App\Http\Controllers\Api\v1\AuthController;
 use App\Http\Controllers\Api\v1\TransactionController;
+use App\Http\Controllers\Api\v1\BulkTransactionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,7 +19,9 @@ Route::post('/login', [AuthController::class, 'login']);
 // Items API
 Route::apiResource('items', ItemController::class);
 Route::get('/productCode', [ItemController::class, 'productCode'])->name('items.product-code');
+Route::get('/productCode/{id}', [ItemController::class, 'singleProductCode'])->name('items.single-product-code');
 Route::get('items/generate-code', [ItemController::class, 'generateProductCode']);
 
 // Transactions API
+Route::post('transactions/bulk', [BulkTransactionController::class, 'bulkInOut']);
 Route::apiResource('transactions', TransactionController::class);
